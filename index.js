@@ -154,7 +154,23 @@ app.post('/api/new-role-registration', async (req,res) => {
     }
 })
 
-// API 5: 
+// API 5: Change Password
+app.post('/api/change-password', async (req,res) => {
+    //Inputs
+    const { userID, oldPassword, newPassword } = req.body;
+    try {
+        const userQuery = await db.query("SELECT * FROM UserInformation WHERE id = $1", [userID]);
+        if (userQuery.rows.length > 0) {
+            if (userQuery.rows[0].md5password === oldPassword) {
+                db.query('UPDATE userinformation SET md5password=$1 WHERE id = $2;', [newPassword,userID]);
+                return res.status(200).json({ success: true});
+            }
+        }
+    } catch (error) {
+        console.error("Error during registration of user:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
 // API 6:
 
