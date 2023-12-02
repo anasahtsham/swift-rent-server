@@ -132,7 +132,27 @@ app.post('/api/register-account', async (req,res) => {
     }
 });
 
-// API 4: 
+// API 4: New Role Registration
+app.post('/api/new-role-registration', async (req,res) => {
+    //Inputs
+    const { userID, userType } = req.body;
+    try {
+        //Creating new userType
+        let ownerID = 0, tenantID = 0; 
+        if (userType === 'owner') {
+            const ownerQuery = await db.query('INSERT INTO Owner (userID) VALUES ($1) RETURNING id;', [userID]);
+            ownerID = ownerQuery.rows[0].id;
+        }else{
+            const tenantQuery = await db.query('INSERT INTO Tenant (userID) VALUES ($1) RETURNING id;', [userID]);
+            tenantID = tenantQuery.rows[0].id;
+        }
+        //Return userID, ownerID, tenantID, success status
+        return res.status(200).json({ userID, ownerID, tenantID, success: true});
+    } catch (error) {
+        console.error("Error during registration of user:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
 // API 5: 
 
