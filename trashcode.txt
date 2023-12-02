@@ -1,0 +1,19 @@
+db.query('SELECT * FROM Users', (err, res) =>{
+    if (err) {
+        console.error("Error executing query", err.stack);
+    } else {
+        console.log(res.rows);
+    }
+});
+
+
+
+app.get("/", (req, res) => {
+    res.send("get req");
+})
+
+app.post("/submit", (req, res, next) => {
+    console.log(req.body);
+    res.send("post");
+    next();
+})
