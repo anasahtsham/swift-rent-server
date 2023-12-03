@@ -12,7 +12,7 @@ db.connect();
 
 import express from "express"; //express server
 import bodyParser from "body-parser";
-import morgan from "morgan"; //logging tool
+import morgan from "morgan"; //request logging tool
 
 //finding out directory folder
 import { dirname } from "path";
@@ -21,11 +21,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 //Initiating Express Server
 const app = express();
+app.use(express.json());
 const port = 3000;
 
 //Parser
 app.use(bodyParser.urlencoded({ extended: true }));
-//Logger
+//Request Logger
 app.use(morgan("tiny"));
 
 // API 1: Login
@@ -101,7 +102,7 @@ app.post('/api/signup-contact', async (req, res) => {
             return res.status(200).json({ success: true});
         }
     } catch (error) {
-        console.error("Error during verfication:", error);
+        console.error("Error during verfication of contacts:", error);
         return res.status(500).json({ error: "Internal Server error"});
     }
 })
@@ -149,7 +150,7 @@ app.post('/api/new-role-registration', async (req,res) => {
         //Return userID, ownerID, tenantID, success status
         return res.status(200).json({ userID, ownerID, tenantID, success: true});
     } catch (error) {
-        console.error("Error during registration of user:", error);
+        console.error("Error during new role registration:", error);
         return res.status(500).json({ error: "Internal Server Error"});
     }
 })
@@ -166,25 +167,169 @@ app.post('/api/change-password', async (req,res) => {
                 return res.status(200).json({ success: true});
             }
         }
+        return res.status(400).json({ error: "Old Password Does not match" })
     } catch (error) {
-        console.error("Error during registration of user:", error);
+        console.error("Error during changing password:", error);
         return res.status(500).json({ error: "Internal Server Error"});
     }
 })
 
-// API 6:
+// API 6: Report A Bug
+app.post('/api/report-bug', async (req,res) => {
+    //Inputs
+    const { userID, userType, bugType, bugDescription } = req.body;
+    try {
+        const userQuery = await db.query('INSERT INTO ReportedBug (userID, userType, bugType, bugDescription) VALUES ($1,$2,$3,$4) ', [userID, userType, bugType, bugDescription]);
+        return res.status(200).json({ success: true});
+    } catch (error) {
+        console.error("Error during reporting a bug:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
-// API 7:
+// API 7: Notification Analytics (Owner)
+app.post('/api/notification-analytics', async (req,res) => {
+    //Inputs
+    const { ownerID } = req.body;
+    try {
+        const ownerQuery = await db.query("SELECT * FROM Notification WHERE id =$1") 
+    } catch (error) {
+        console.error("Error during analyzing notifications:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
-// API 8:
+// API 8: Notification List
+app.post('/api/notification-list', async (req,res) => {
+    //Inputs
+    const {} = req.body;
+    try {
+        
+    } catch (error) {
+        console.error("Error during compiling notification list:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
-// API 9:
+// API 9: Month Analytics
+app.post('/api/month-analytics', async (req,res) => {
+    //Inputs
+    const { ownerID } = req.body;
+    try {
+        // Figure out the current month dynamically
+        const currentMonth = new Date().getMonth() + 1; // Months are zero-indexed, so add 1
+    
+        // Grab ids of the owner's properties which do not have their dueDate as 0 from Property table
+        const propertyIDsQuery = await db.query(`SELECT id FROM Property WHERE ownerID = $1 AND dueDate != '0';`, [ownerID]);
+    
+        const propertyIDs = propertyIDsQuery.rows.map(row => row.id);//this converts from key value pairs to value
+    
+        if (propertyIDs.length === 0) {
+          // No data found
+          return res.status(404).json({ error: "No properties found for the owner" });
+        }
+    
+        // Check for all the records of those properties in the RentTransaction table
+        const rentTransactionsQuery = await db.query(`
+          SELECT amount
+          FROM RentTransaction
+          WHERE propertyID IN (${propertyIDs.join(',')}) AND EXTRACT(MONTH FROM PaymentDateTime) = $1;
+        `, [currentMonth]);
+    
+        // Sum the amount and return total (totalProfit)
+        const totalProfit = rentTransactionsQuery.rows.reduce((total, transaction) => total + parseFloat(transaction.amount), 0);
+    
+        // Grab the sum of total properties which do not have their dueDate as 0 of a specific owner (totalProperty)
+        const totalPropertyQuery = await db.query(`
+          SELECT COUNT(id)
+          FROM Property
+          WHERE ownerID = $1 AND dueDate != '0';
+        `, [ownerID]);
+    
+        const totalProperty = totalPropertyQuery.rows[0].count;
+    
+        // Grab the sum of total entries filed in the current month of all the properties of a user
+        // in the RentTransaction table and return total rents received (totalReceived)
+        const totalReceivedQuery = await db.query(`
+          SELECT SUM(amount)
+          FROM RentTransaction
+          WHERE propertyID IN (${propertyIDs.join(',')}) AND EXTRACT(MONTH FROM PaymentDateTime) = $1;
+        `, [currentMonth]);
+    
+        const totalReceived = totalReceivedQuery.rows[0].sum || 0;
+    
+        // Grab ids of the owner's properties which do not have their dueDate as 0 from Property table
+        const pendingRentPropertyIDsQuery = await db.query(`
+          SELECT id
+          FROM Property
+          WHERE ownerID = $1 AND dueDate != '0';
+        `, [ownerID]);
+    
+        const pendingRentPropertyIDs = pendingRentPropertyIDsQuery.rows.map(row => row.id);
+    
+        // Find out all the tenants associated with those properties
+        // Check which of the tenants do not have their tenantID present in the RentTransaction table
+        const pendingRentQuery = await db.query(`
+          SELECT COUNT(DISTINCT Tenant.id) as count
+          FROM Tenant
+          LEFT JOIN RentTransaction ON Tenant.id = RentTransaction.tenantID
+          WHERE Tenant.rentedPropertyID IN (${pendingRentPropertyIDs.join(',')})
+            AND EXTRACT(MONTH FROM RentTransaction.PaymentDateTime) != $1
+            AND RentTransaction.PaymentDateTime IS NOT NULL;
+        `, [currentMonth]);
+    
+        const pendingRent = pendingRentQuery.rows[0].count;
+    
+        // Return the results
+        return res.json({
+          totalProfit,
+          totalProperty,
+          totalReceived,
+          pendingRent,
+          success: true,
+        });
+    
+      } catch (error) {
+        console.error("Error during month analytics:", error);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+})
 
-// API 10:
+// API 10: Monthly Analytics
+app.post('/api/monthly-analytics', async (req,res) => {
+    //Inputs
+    const {} = req.body;
+    try {
+        
+    } catch (error) {
+        console.error("Error during compiling monthly analytics:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
-// API 11:
+// API 11: Add Property
+app.post('/api/add-property', async (req,res) => {
+    //Inputs
+    const {  } = req.body;
+    try {
+        
+    } catch (error) {
+        console.error("Error during adding properties:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
-// API 12:
+// API 12: Property List
+app.post('/api/property-list', async (req,res) => {
+    //Inputs
+    const {} = req.body;
+    try {
+        
+    } catch (error) {
+        console.error("Error during compiling property list:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
 
 app.listen(port, () => {
     console.log(`Server started on port ${port}`);
