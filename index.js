@@ -310,9 +310,13 @@ app.post('/api/monthly-analytics', async (req,res) => {
 // API 11: Add Property
 app.post('/api/add-property', async (req,res) => {
     //Inputs
-    const {  } = req.body;
+    const { ownerID, rent, dueDate, propertyAddress } = req.body;
     try {
-        
+        const propertyQuery = await db.query(`INSERT INTO 
+        Property (ownerID, rent, dueDate, propertyAddress) 
+        VALUES ($1,$2,$3,$4)
+        RETURNING id;`, [ownerID, rent, dueDate, propertyAddress]);
+        return res.status(200).json({ success:true })
     } catch (error) {
         console.error("Error during adding properties:", error);
         return res.status(500).json({ error: "Internal Server Error"});
