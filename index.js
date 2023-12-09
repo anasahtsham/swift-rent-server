@@ -254,6 +254,108 @@ app.post('/api/notification-list', async (req, res) => {
     }
 });
 
+// API 9: Month Analytics
+app.post('/api/month-analytics', async (req, res) => {
+    const { ownerID } = req.body;
+    const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+    try {
+        // Query for totalProfit, totalProperty, totalReceived, pendingRent
+        const profitQuery = `
+            SELECT SUM(amount) as totalProfit
+            FROM RentTransaction
+            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+        `;
+        const propertyQuery = `
+            SELECT COUNT(*) as totalProperty
+            FROM Property
+            WHERE ownerID = $1 AND dueDate != '0';
+        `;
+        const receivedQuery = `
+            SELECT COUNT(*) as totalReceived
+            FROM RentTransaction
+            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+        `;
+        const pendingQuery = `
+            SELECT COUNT(*) as pendingRent
+            FROM Tenant t
+            LEFT JOIN RentTransaction rt ON t.id = rt.tenantID
+            WHERE t.rentedPropertyID IN (
+                SELECT id FROM Property WHERE ownerID = $1 AND dueDate != '0'
+            ) AND rt.id IS NULL;
+        `;
+
+        // Executing queries
+        const totalProfitResult = await db.query(profitQuery, [ownerID, currentMonth]);
+        const totalPropertyResult = await db.query(propertyQuery, [ownerID]);
+        const totalReceivedResult = await db.query(receivedQuery, [ownerID, currentMonth]);
+        const pendingRentResult = await db.query(pendingQuery, [ownerID]);
+
+        // Preparing the response
+        const response = {
+            totalProfit: totalProfitResult.rows[0].totalprofit || 0,
+            totalProperty: totalPropertyResult.rows[0].totalproperty || 0,
+            totalReceived: totalReceivedResult.rows[0].totalreceived || 0,
+            pendingRent: pendingRentResult.rows[0].pendingrent || 0,
+            success: true
+        };
+
+        res.status(200).json(response);
+    } catch (error) {
+        console.error("Error during month analytics:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// API 10: Monthly Analytics
+app.post('/api/monthly-analytics', async (req, res) => {
+    const { ownerID } = req.body;
+    try {
+        // Query to find the first transaction date
+        const firstTransactionQuery = `
+            SELECT EXTRACT(YEAR FROM PaymentDateTime) as year, EXTRACT(MONTH FROM PaymentDateTime) as month
+            FROM RentTransaction
+            WHERE ownerID = $1
+            ORDER BY PaymentDateTime ASC
+            LIMIT 1;
+        `;
+        const firstTransactionResult = await db.query(firstTransactionQuery, [ownerID]);
+        
+        // Check if there is any transaction data
+        if (firstTransactionResult.rows.length === 0) {
+            return res.status(404).json({ error: "No transaction data found" });
+        }
+
+        // Preparing to loop through months
+        const startYear = firstTransactionResult.rows[0].year;
+        const startMonth = firstTransactionResult.rows[0].month;
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+        let monthlyData = [];
+
+        // Loop through each month
+        for (let year = startYear; year <= currentYear; year++) {
+            for (let month = (year === startYear ? startMonth : 1); month <= (year === currentYear ? currentMonth : 12); month++) {
+                const monthQuery = `
+                    SELECT SUM(amount) as profit
+                    FROM RentTransaction
+                    WHERE ownerID = $1 AND EXTRACT(YEAR FROM PaymentDateTime) = $2 AND EXTRACT(MONTH FROM PaymentDateTime) = $3;
+                `;
+                const monthResult = await db.query(monthQuery, [ownerID, year, month]);
+                monthlyData.push({
+                    year: year,
+                    month: month,
+                    profit: monthResult.rows[0].profit || 0
+                });
+            }
+        }
+
+        res.status(200).json({ monthlyData, success: true });
+    } catch (error) {
+        console.error("Error during monthly analytics:", error);
+        res.status(500).json({ error: "Internal Server Error"});
+    }
+});
+
 // API 11: Add Property
 app.post('/api/add-property', async (req,res) => {
     //Inputs
