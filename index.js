@@ -79,30 +79,13 @@ app.post('/api/signup-contact', async (req, res) => {
     //Inputs
     const { email, phone } = req.body;
     try {
-        let emailExists = 0, phoneExists = 0;
-        //Checking if the email is unique
-        const emailQuery = await db.query('SELECT * FROM UserInformation WHERE email = $1', [email]);        
-        if(emailQuery.rows.length > 0){
-            emailExists = 1;
-        }
-        //Checking if the phone is unique
-        const phoneQuery = await db.query('SELECT * FROM UserInformation WHERE phone = $1', [phone]);
-        if (phoneQuery.rows.length > 0) {
-            phoneExists = 1;
+        //Checking if the email & phone are unique
+        const userQuery = await db.query('SELECT * FROM UserInformation WHERE email = $1 OR phone = $2', [email, phone]);        
+        if(userQuery.rows.length > 0){
+            return res.status(400).json({ error:"These credentials are not available to existing accounts"});
         }
         //Returning Message
-        if (emailExists && phoneExists) {
-            return res.status(400).json({ error:"Email & Phone already linked to existing accounts"});
-        }
-        else if (emailExists) {
-            return res.status(400).json({ error:"Email already linked to existing account"});
-        }
-        else if (phoneExists) {
-            return res.status(400).json({ error:"Phone already linked to exisitng account"});
-        }
-        else{
-            return res.status(200).json({ success: true});
-        }
+        return res.status(200).json({ success: true});
     } catch (error) {
         console.error("Error during verfication of contacts:", error);
         return res.status(500).json({ error: "Internal Server error"});
