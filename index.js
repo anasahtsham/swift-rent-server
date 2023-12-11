@@ -1,4 +1,6 @@
 import pg from "pg"; //postgress database
+import cors from "cors";
+
 
 //Connecting Database
 const db = new pg.Client({
@@ -21,6 +23,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 //Initiating Express Server
 const app = express();
+app.use(cors());
 const port = 3000;
 
 //JSON Parser
