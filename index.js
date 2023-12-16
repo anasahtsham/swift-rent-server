@@ -33,6 +33,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //Request Logger
 app.use(morgan("tiny"));
 
+//API 0: Admin Login
+app.post("/api/admin-login", async (req, res) => {
+  //Inputs
+  const { userName, password } = req.body;
+    if (userName == "admin" && password == "admin") {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(400).json({ error: "Incorrect Credentials" });
+    }    
+});
+
 // API 1: Login
 app.post("/api/login", async (req, res) => {
   //Inputs
@@ -46,14 +57,14 @@ app.post("/api/login", async (req, res) => {
     console.log(userQuery.rows.length);
     if (userQuery.rows.length === 0) {
       // User not found
-      return res.status(401).json({ error: "Invalid Email or Phone" });
+      return res.status(401).json({ error: "Incorrect Credentials" });
     }
 
     const user = userQuery.rows[0];
 
     // Check if the provided password matches the stored password
     if (user.md5password !== password) {
-      return res.status(401).json({ error: "Invalid Password" });
+      return res.status(401).json({ error: "Incorrect Credentials" });
     }
 
     // Determine the user type (Owner, Tenant, etc.) by checking other tables
