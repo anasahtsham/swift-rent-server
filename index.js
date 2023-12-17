@@ -34,7 +34,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("tiny"));
 
 //API 0: Admin Login
-app.post("/api/admin-login", async (req, res) => {
+app.post("/api/admin/login", async (req, res) => {
   //Inputs
   const { userName, password } = req.body;
     if (userName == "admin" && password == "admin") {
@@ -54,7 +54,6 @@ app.post("/api/login", async (req, res) => {
       "SELECT * FROM UserInformation WHERE email = $1 OR phone = $1",
       [emailOrPhone]
     );
-    console.log(userQuery.rows.length);
     if (userQuery.rows.length === 0) {
       // User not found
       return res.status(401).json({ error: "Incorrect Credentials" });
@@ -470,6 +469,54 @@ app.post("/api/property-list", async (req, res) => {
     res.status(200).json({ propertyList, success: true });
   } catch (error) {
     console.error("Error during property list:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 13: Admin - List of Owners
+app.post("/api/admin/list-owners", async (req, res) => {
+  try {
+    // Query to get information about owners with DOB in YYYY-MM-DD format
+    const ownersQuery = `
+      SELECT
+        CONCAT(ui.firstname, ' ', ui.lastname) AS ownerName,
+        TO_CHAR(ui.dob, 'YYYY-MM-DD') AS dob, -- Fetch DOB in YYYY-MM-DD format
+        ui.email AS email,
+        ui.phone AS phone,
+        o.id AS ownerID,
+        ui.id AS userID
+      FROM Owner o
+      JOIN UserInformation ui ON o.userID = ui.id;
+    `;
+    const owners = await db.query(ownersQuery);
+
+    res.status(200).json({ owners: owners.rows, success: true });
+  } catch (error) {
+    console.error("Error while fetching list of owners:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 14: Admin - List of Tenants
+app.post("/api/admin/list-tenants", async (req, res) => {
+  try {
+    // Query to get information about tenants with DOB in YYYY-MM-DD format
+    const tenantsQuery = `
+      SELECT
+        CONCAT(ui.firstname, ' ', ui.lastname) AS tenantName,
+        TO_CHAR(ui.dob, 'YYYY-MM-DD') AS dob, -- Fetch DOB in YYYY-MM-DD format
+        ui.email AS email,
+        ui.phone AS phone,
+        t.id AS tenantID,
+        ui.id AS userID
+      FROM Tenant t
+      JOIN UserInformation ui ON t.userID = ui.id;
+    `;
+    const tenants = await db.query(tenantsQuery);
+
+    res.status(200).json({ tenants: tenants.rows, success: true });
+  } catch (error) {
+    console.error("Error while fetching list of tenants:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
