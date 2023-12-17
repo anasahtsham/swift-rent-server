@@ -559,7 +559,28 @@ app.delete("/api/admin/delete-tenant", async (req, res) => {
   }
 });
 
+// API 17: Admin - Edit User
+app.put("/api/admin/edit-user", async (req, res) => {
+  const { userID, userName, DOB, email, phone } = req.body;
+  
+  // Extracting firstName and lastName from userName
+  const spaceIndex = userName.indexOf(' ');
+  const firstName = spaceIndex === -1 ? userName : userName.substring(0, spaceIndex);
+  const lastName = spaceIndex === -1 ? '' : userName.substring(spaceIndex + 1);
 
+  try {
+    // Update owner information in the database
+    await db.query(
+      "UPDATE UserInformation SET firstname=$1, lastname=$2, dob=$3, email=$4, phone=$5 WHERE id = $6;",
+      [firstName, lastName, DOB, email, phone, userID]
+    );
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error while editing owner:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
