@@ -521,6 +521,46 @@ app.post("/api/admin/list-tenants", async (req, res) => {
   }
 });
 
+// API 15: Admin - Delete Owner
+app.delete("/api/admin/delete-owner", async (req, res) => {
+  const { ownerID } = req.body; // Read ownerID from the request body
+  try {
+    // Delete the owner instance from the database
+    const result = await db.query("DELETE FROM Owner WHERE id = $1", [ownerID]); 
+
+    // Check if the deletion was successful
+    if (result.rowCount === 1) {
+      res.status(200).json({ success: true });
+    } else {
+      res.status(404).json({ error: "Owner not found" });
+    }
+  } catch (error) {
+    console.error("Error while deleting owner:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 16: Admin - Delete Tenant
+app.delete("/api/admin/delete-tenant", async (req, res) => {
+  const { tenantID } = req.body; // Read tenantID from the request body
+  try {
+    // Delete the tenant instance from the database
+    const result = await db.query("DELETE FROM Tenant WHERE id = $1", [tenantID]);
+
+    // Check if the deletion was successful
+    if (result.rowCount === 1) {
+      res.status(200).json({ success: true });
+    } else {
+      res.status(404).json({ error: "Tenant not found" });
+    }
+  } catch (error) {
+    console.error("Error while deleting tenant:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
