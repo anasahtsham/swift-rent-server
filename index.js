@@ -309,7 +309,11 @@ app.post("/api/notification-list", async (req, res) => {
 // API 9: Month Analytics
 app.post("/api/month-analytics", async (req, res) => {
   const { ownerID } = req.body;
-  const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+  const currentYear = currentDate.getFullYear();
+  const monthName = getCurrentMonthName(currentMonth);
+
   try {
     // Query for totalProfit, totalProperty, totalReceived, pendingRent
     const profitQuery = `
@@ -350,6 +354,8 @@ app.post("/api/month-analytics", async (req, res) => {
 
     // Preparing the response
     const response = {
+      currentMonth: monthName,
+      currentYear: currentYear,
       totalProfit: totalProfitResult.rows[0].totalprofit || 0,
       totalProperty: totalPropertyResult.rows[0].totalproperty || 0,
       totalReceived: totalReceivedResult.rows[0].totalreceived || 0,
@@ -363,6 +369,25 @@ app.post("/api/month-analytics", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Helper function to get the current month name with the first character capitalized
+function getCurrentMonthName(monthIndex) {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return months[monthIndex - 1]; // Subtract 1 because JavaScript months are 0-indexed
+}
 
 // API 10: Monthly Analytics
 app.post("/api/monthly-analytics", async (req, res) => {
