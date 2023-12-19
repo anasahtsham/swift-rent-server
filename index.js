@@ -582,6 +582,41 @@ app.put("/api/admin/edit-user", async (req, res) => {
   }
 });
 
+// API 18: Owner Details
+app.post("/api/owner-details", async (req, res) => {
+  // Inputs
+  const { ownerID } = req.body;
+
+  try {
+    // Query to fetch owner details based on ownerID
+    const ownerDetailsQuery = `
+      SELECT
+        CONCAT(ui.firstName, ' ', ui.lastName) AS ownerName,
+        ui.email AS email,
+        ui.phone AS phone
+      FROM Owner o
+      JOIN UserInformation ui ON o.userID = ui.id
+      WHERE o.id = $1;
+    `;
+
+    const ownerDetails = await db.query(ownerDetailsQuery, [ownerID]);
+
+    // Check if owner details exist
+    if (ownerDetails.rows.length === 0) {
+      return res.status(404).json({ error: "Owner not found" });
+    }
+
+    // Extract owner details
+    const { ownername, email, phone } = ownerDetails.rows[0];
+
+    // Prepare and send the response
+    res.status(200).json({ ownername, email, phone, success: true });
+  } catch (error) {
+    console.error("Error while fetching owner details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
