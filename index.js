@@ -608,9 +608,9 @@ app.post("/api/owner-details", async (req, res) => {
 
     // Extract owner details
     const { ownername, email, phone } = ownerDetails.rows[0];
-
+    const ownerName = ownername;
     // Prepare and send the response
-    res.status(200).json({ ownername, email, phone, success: true });
+    res.status(200).json({ ownerName, email, phone, success: true });
   } catch (error) {
     console.error("Error while fetching owner details:", error);
     res.status(500).json({ error: "Internal Server Error" });
