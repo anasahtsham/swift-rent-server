@@ -642,6 +642,41 @@ app.post("/api/owner-details", async (req, res) => {
   }
 });
 
+// API 19: Owner Details
+app.post("/api/tenant-details", async (req, res) => {
+  // Inputs
+  const { tenantID } = req.body;
+
+  try {
+    // Query to fetch owner details based on ownerID
+    const tenantDetailsQuery = `
+      SELECT
+        CONCAT(ui.firstName, ' ', ui.lastName) AS tenantName,
+        ui.email AS email,
+        ui.phone AS phone
+      FROM Tenant t
+      JOIN UserInformation ui ON t.userID = ui.id
+      WHERE t.id = $1;
+    `;
+
+    const tenantDetails = await db.query(tenantDetailsQuery, [tenantID]);
+
+    // Check if owner details exist
+    if (tenantDetails.rows.length === 0) {
+      return res.status(404).json({ error: "Tenant not found" });
+    }
+
+    // Extract owner details
+    const { tenantname, email, phone } = tenantDetails.rows[0];
+    const tenantName = tenantname;
+    // Prepare and send the response
+    res.status(200).json({ tenantName, email, phone, success: true });
+  } catch (error) {
+    console.error("Error while fetching tenant details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
