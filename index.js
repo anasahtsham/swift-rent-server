@@ -20,6 +20,8 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+console.log(__dirname);
+
 //Initiating Express Server
 const app = express();
 app.use(cors());
@@ -106,7 +108,7 @@ app.post("/api/signup-contact", async (req, res) => {
     );
     if (userQuery.rows.length > 0) {
       return res
-        .status(400)
+        .status(420)
         .json({
           error: "These credentials are not available to existing accounts",
         });
