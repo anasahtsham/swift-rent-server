@@ -163,6 +163,8 @@ app.post("/api/new-role-registration", async (req, res) => {
   //Inputs
   const { userID, userType } = req.body;
   try {
+    console.log(userID);
+    console.log(userType);
     //Creating new userType
     let ownerID = 0,
       tenantID = 0;
@@ -172,7 +174,7 @@ app.post("/api/new-role-registration", async (req, res) => {
         [userID]
       );
       ownerID = ownerQuery.rows[0].id;
-    } else {
+    } else if (userType === "tenant") {
       const tenantQuery = await db.query(
         "INSERT INTO Tenant (userID) VALUES ($1) RETURNING id;",
         [userID]
