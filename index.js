@@ -128,8 +128,10 @@ app.post("/api/register-account", async (req, res) => {
     req.body;
   try {
     //Creating a new record in user table
-    const userQuery = await db.query(
-      "INSERT INTO UserInformation (firstname, lastname, dob, email, phone, md5password) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id;",
+    const userQuery = await db.query(`
+      INSERT INTO UserInformation (firstname, lastname, dob, email, phone, md5password) 
+      VALUES ($1,$2,$3,$4,$5,$6) 
+      RETURNING id;`,
       [firstName, lastName, DOB, email, phone, password]
     );
     //Extracting userID
@@ -150,8 +152,11 @@ app.post("/api/register-account", async (req, res) => {
       );
       tenantID = tenantQuery.rows[0].id;
     }
-    //Return userID, ownerID, tenantID, success status
-    return res.status(200).json({ userID, ownerID, tenantID, success: true });
+    //digi code is the first 8 and last 8 digits of the password which is in md5
+    const digiCode = password.slice(0, 8) + password.slice(-8);
+    console.log(digiCode);
+    //Return userID, ownerID, tenantID, digicode, success status
+    return res.status(200).json({ userID, ownerID, tenantID, digiCode, success: true });
   } catch (error) {
     console.error("Error during registration of user:", error);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -204,7 +209,9 @@ app.post("/api/change-password", async (req, res) => {
           newPassword,
           userID,
         ]);
-        return res.status(200).json({ success: true });
+        //digi code is the first 8 and last 8 digits of the password which is in md5
+        const digiCode = newPassword.slice(0, 8) + newPassword.slice(-8);
+        return res.status(200).json({ digiCode, success: true });
       }
     }
     return res.status(400).json({ error: "Old Password Does not match" });
@@ -646,7 +653,7 @@ app.post("/api/owner-details", async (req, res) => {
   }
 });
 
-// API 19: Owner Details
+// API 19: Tenant Details
 app.post("/api/tenant-details", async (req, res) => {
   // Inputs
   const { tenantID } = req.body;
@@ -678,6 +685,41 @@ app.post("/api/tenant-details", async (req, res) => {
   } catch (error) {
     console.error("Error while fetching tenant details:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 20: Auth: Reset Password
+app.post('/api/reset-password', async (req, res) => {
+  const { emailOrPhone, currentDigiCode, newPassword } = req.body;
+
+  try {
+    // Fetch user from the database based on emailOrPhone
+    const userQuery = await db.query('SELECT * FROM UserInformation WHERE email = $1 OR phone = $1', [emailOrPhone]);
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const password = userQuery.rows[0].md5password;
+
+    // Compare the digiCode with the first and last 8 digits of the hashed password
+
+    const databaseDigiCode = password.slice(0, 8) + password.slice(-8);
+
+    if (databaseDigiCode !== currentDigiCode) {
+      return res.status(400).json({ error: 'Invalid digiCode' });
+    }
+
+    // Update user's password in the database with the new password
+    await db.query('UPDATE UserInformation SET md5password = $1 WHERE id = $2', [newPassword, userQuery.rows[0].id]);
+
+    const digiCode = newPassword.slice(0, 8) + newPassword.slice(-8);
+
+    return res.status(200).json({ digiCode, success: true }); // or any other success message
+
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
