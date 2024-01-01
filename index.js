@@ -1,5 +1,6 @@
 import pg from "pg"; //postgress database
 import cors from "cors";
+import { md5 } from "js-md5"
 
 //Connecting Database
 const db = new pg.Client({
@@ -568,7 +569,11 @@ app.post("/api/admin/list-owners", async (req, res) => {
         ui.email AS email,
         ui.phone AS phone,
         o.id AS ownerID,
-        ui.id AS userID
+        ui.id AS userID,
+        CASE
+          WHEN ui.md5password = '00000000000000000000000000000000' THEN 'banned'
+          ELSE 'un-banned'
+        END AS status
       FROM Owner o
       JOIN UserInformation ui ON o.userID = ui.id;
     `;
@@ -592,7 +597,11 @@ app.post("/api/admin/list-tenants", async (req, res) => {
         ui.email AS email,
         ui.phone AS phone,
         t.id AS tenantID,
-        ui.id AS userID
+        ui.id AS userID,
+        CASE
+          WHEN ui.md5password = '00000000000000000000000000000000' THEN 'banned'
+          ELSE 'un-banned'
+        END AS status
       FROM Tenant t
       JOIN UserInformation ui ON t.userID = ui.id;
     `;
@@ -791,7 +800,189 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
+// API 21: Owner - Register Tenant to Property
+app.post("/api/owner/register-tenant", async (req, res) => {
+  // Inputs
+  const { propertyID, tenantEmailorPhone } = req.body;
+  try {
+    // Find the user by their email or phone in the UserInformation table
+    const userQuery = await db.query(
+      "SELECT id FROM UserInformation WHERE email = $1 OR phone = $1",
+      [tenantEmailorPhone]
+    );
 
+    // Check if the user exists
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userID = userQuery.rows[0].id;
+
+    // Check if the user is registered as a tenant in the Tenant table
+    const tenantQuery = await db.query(
+      "SELECT id FROM Tenant WHERE userID = $1",
+      [userID]
+    );
+
+    // Check if the user is registered as a tenant
+    if (tenantQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User is not registered as a tenant" });
+    }
+
+    const tenantID = tenantQuery.rows[0].id;
+
+    // Update the property's tenantID with the found tenantID
+    await db.query(
+      "UPDATE Property SET tenantID = $1 WHERE id = $2",
+      [tenantID, propertyID]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error registering tenant to property:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 22: Owner - Un-register Tenant from Property
+app.post("/api/owner/unregister-tenant", async (req, res) => {
+  // Inputs
+  const { propertyID } = req.body;
+  try {
+    // Replace tenantID in the Property table with 0 for the given propertyID
+    await db.query(
+      "UPDATE Property SET tenantID = 0 WHERE id = $1",
+      [propertyID]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error unregistering tenant from property:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 23: Owner - Edit Property
+app.post("/api/edit-property", async (req, res) => {
+  // Inputs
+  const { propertyID, propertyAddress, dueDate, rent } = req.body;
+  try {
+    // Update new values into the Property table corresponding to propertyID
+    await db.query(
+      "UPDATE Property SET propertyaddress = $1, duedate = $2, rent = $3 WHERE id = $4",
+      [propertyAddress, dueDate, rent, propertyID]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error editing property:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 24: Owner - Fetch Property Data
+app.post("/api/fetch-property", async (req, res) => {
+  // Input
+  const { propertyID } = req.body;
+  try {
+    // Fetch property details for the given propertyID
+    const propertyQuery = await db.query(
+      "SELECT propertyaddress, duedate, rent FROM Property WHERE id = $1",
+      [propertyID]
+    );
+
+    if (propertyQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Property not found" });
+    }
+
+    const { propertyaddress, duedate, rent } = propertyQuery.rows[0];
+    return res.status(200).json({ propertyAddress : propertyaddress, dueDate: duedate, rent, success: true });
+  } catch (error) {
+    console.error("Error fetching property data:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 25: Admin - User Complaints
+app.post("/api/admin/user-complaints", async (req, res) => {
+  try {
+    // Fetch all user complaints from ReportedBug table
+    const complaintsQuery = await db.query("SELECT * FROM ReportedBug");
+
+    return res.status(200).json({ bugData: complaintsQuery.rows, success: true });
+  } catch (error) {
+    console.error("Error fetching user complaints:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 26: Admin - User Information
+app.get("/api/admin/user-info", async (req, res) => {
+  try {
+    // Fetch total number of registered users from UserInformation table
+    const totalUsersQuery = await db.query("SELECT COUNT(*) FROM UserInformation");
+    const totalUsers = parseInt(totalUsersQuery.rows[0].count);
+
+    // Fetch total number of owners from Owner table
+    const totalOwnersQuery = await db.query("SELECT COUNT(*) FROM Owner");
+    const totalOwners = parseInt(totalOwnersQuery.rows[0].count);
+
+    // Fetch total number of tenants from Tenant table
+    const totalTenantsQuery = await db.query("SELECT COUNT(*) FROM Tenant");
+    const totalTenants = parseInt(totalTenantsQuery.rows[0].count);
+
+    return res.status(200).json({ totalUsers, totalOwners, totalTenants, success: true });
+  } catch (error) {
+    console.error("Error fetching user information:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 27: Admin - Ban User
+app.post("/api/admin/ban-user", async (req, res) => {
+  // Input
+  const { userID } = req.body;
+  try {
+    // Find user by their userID in UserInformation and update their password to 32 zeros
+    await db.query("UPDATE UserInformation SET md5password='00000000000000000000000000000000' WHERE id = $1", [
+      userID,
+    ]);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error banning user:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 28: Admin - Un-ban User
+app.post("/api/admin/unban-user", async (req, res) => {
+  // Input
+  const { userID } = req.body;
+  try {
+    // Find user by their userID in UserInformation and update their password to a hashed value of their email
+    const userQuery = await db.query("SELECT email FROM UserInformation WHERE id = $1", [userID]);
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userEmail = userQuery.rows[0].email;
+
+    // Hash the email to generate a new password
+    const hashedPassword = md5(userEmail);
+
+    await db.query("UPDATE UserInformation SET md5password=$1 WHERE id = $2", [
+      hashedPassword,
+      userID,
+    ]);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error unbanning user:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
