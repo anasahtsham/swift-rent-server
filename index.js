@@ -98,25 +98,79 @@ app.post("/api/login", async (req, res) => {
 
 // API 2: Signup Contact Verification
 app.post("/api/signup-contact", async (req, res) => {
-  //Inputs
-  const { email, phone } = req.body;
+  // Inputs
+  const { userID, email, phone } = req.body;
+  
   try {
-    //Checking if the email & phone are unique
-    const userQuery = await db.query(
-      "SELECT * FROM UserInformation WHERE email = $1 OR phone = $2",
-      [email, phone]
-    );
-    if (userQuery.rows.length > 0) {
-      return res
-        .status(420)
-        .json({
+    if (userID) {
+      // Fetch email and phone associated with the provided userID
+      const userCredentialsQuery = await db.query(
+        "SELECT email, phone FROM UserInformation WHERE id = $1",
+        [userID]
+      );
+
+      // Check if the user with the given userID exists
+      if (userCredentialsQuery.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Get the email and phone associated with the userID
+      const { email: userStoredEmail, phone: userStoredPhone } = userCredentialsQuery.rows[0];
+
+      // Check if both email and phone are unchanged
+      if (email === userStoredEmail && phone === userStoredPhone) {
+        return res.status(200).json({ success: true });
+      } else {
+        let errorResponse = null;
+
+        // If both are not the same, check each one individually
+        if (email !== userStoredEmail) {
+          // Check if the new email exists in the database
+          const emailQuery = await db.query(
+            "SELECT * FROM UserInformation WHERE email = $1",
+            [email]
+          );
+
+          if (emailQuery.rows.length > 0) {
+            errorResponse = "This email is already associated with an existing account";
+          }
+        }
+
+        if (phone !== userStoredPhone) {
+          // Check if the new phone exists in the database
+          const phoneQuery = await db.query(
+            "SELECT * FROM UserInformation WHERE phone = $1",
+            [phone]
+          );
+
+          if (phoneQuery.rows.length > 0) {
+            errorResponse = "This phone number is already associated with an existing account";
+          }
+        }
+
+        if (errorResponse) {
+          return res.status(420).json({ error: errorResponse });
+        } else {
+          return res.status(200).json({ success: true });
+        }
+      }
+    } else {
+      // Check if the email or phone is already associated with an existing account
+      const userQuery = await db.query(
+        "SELECT * FROM UserInformation WHERE email = $1 OR phone = $2",
+        [email, phone]
+      );
+
+      if (userQuery.rows.length > 0) {
+        return res.status(420).json({
           error: "These credentials are not available to existing accounts",
         });
+      }
+
+      return res.status(200).json({ success: true });
     }
-    //Returning Message
-    return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Error during verfication of contacts:", error);
+    console.error("Error during verification of contacts:", error);
     return res.status(500).json({ error: "Internal Server error" });
   }
 });
@@ -226,9 +280,10 @@ app.post("/api/report-bug", async (req, res) => {
   //Inputs
   const { userID, userType, bugType, bugDescription } = req.body;
   try {
+    const bugStatus = 'P';
     const userQuery = await db.query(
-      "INSERT INTO ReportedBug (userID, userType, bugType, bugDescription) VALUES ($1,$2,$3,$4) ",
-      [userID, userType, bugType, bugDescription]
+      "INSERT INTO ReportedBug (userID, userType, bugType, bugDescription, bugStatus) VALUES ($1,$2,$3,$4,$5) ",
+      [userID, userType, bugType, bugDescription, bugStatus]
     );
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -342,14 +397,6 @@ app.post("/api/month-analytics", async (req, res) => {
             FROM RentTransaction
             WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
         `;
-    const pendingQuery = `
-            SELECT COUNT(*) as pendingRent
-            FROM Tenant t
-            LEFT JOIN RentTransaction rt ON t.id = rt.tenantID
-            WHERE t.rentedPropertyID IN (
-                SELECT id FROM Property WHERE ownerID = $1 AND dueDate != '0'
-            ) AND rt.id IS NULL;
-        `;
 
     // Executing queries
     const totalProfitResult = await db.query(profitQuery, [
@@ -361,7 +408,6 @@ app.post("/api/month-analytics", async (req, res) => {
       ownerID,
       currentMonth,
     ]);
-    const pendingRentResult = await db.query(pendingQuery, [ownerID]);
 
     // Preparing the response
     const response = {
@@ -370,7 +416,7 @@ app.post("/api/month-analytics", async (req, res) => {
       totalProfit: totalProfitResult.rows[0].totalprofit || 0,
       totalProperty: totalPropertyResult.rows[0].totalproperty || 0,
       totalReceived: totalReceivedResult.rows[0].totalreceived || 0,
-      pendingRent: pendingRentResult.rows[0].pendingrent || 0,
+      pendingRent: String(parseInt(totalPropertyResult.rows[0].totalproperty) - parseInt(totalReceivedResult.rows[0].totalreceived)) || 0,
       success: true,
     };
 
@@ -397,7 +443,7 @@ function getCurrentMonthName(monthIndex) {
     "November",
     "December",
   ];
-  return months[monthIndex - 1]; // Subtract 1 because JavaScript months are 0-indexed
+  return months[monthIndex - 1];
 }
 
 // API 10: Monthly Analytics
@@ -443,12 +489,12 @@ app.post("/api/monthly-analytics", async (req, res) => {
         const monthResult = await db.query(monthQuery, [ownerID, year, month]);
         monthlyData.push({
           year: year,
-          month: month,
+          month: getCurrentMonthName(parseInt(month, 10)),
           profit: monthResult.rows[0].profit || 0,
         });
       }
     }
-
+    monthlyData = monthlyData.reverse();
     res.status(200).json({ monthlyData, success: true });
   } catch (error) {
     console.error("Error during monthly analytics:", error);
@@ -463,8 +509,8 @@ app.post("/api/add-property", async (req, res) => {
   try {
     const propertyQuery = await db.query(
       `INSERT INTO 
-        Property (ownerID, rent, dueDate, propertyAddress) 
-        VALUES ($1,$2,$3,$4)
+        Property (ownerID, tenantID, rent, dueDate, propertyAddress) 
+        VALUES ($1,0,$2,$3,$4)
         RETURNING id;`,
       [ownerID, rent, dueDate, propertyAddress]
     );
@@ -479,15 +525,15 @@ app.post("/api/add-property", async (req, res) => {
 app.post("/api/property-list", async (req, res) => {
   const { ownerID } = req.body;
   try {
-    // Query to get the properties
+    // Query to get the properties along with tenantID
     const propertyQuery = `
-            SELECT p.*, SUM(rt.amount) as totalProfit
-            FROM Property p
-            LEFT JOIN RentTransaction rt ON p.id = rt.propertyID
-            WHERE p.ownerID = $1 AND p.dueDate != '0'
-            GROUP BY p.id
-            ORDER BY p.id;
-        `;
+      SELECT p.id as propertyID, p.propertyaddress, p.tenantID, SUM(rt.amount) as totalProfit
+      FROM Property p
+      LEFT JOIN RentTransaction rt ON p.id = rt.propertyID
+      WHERE p.ownerID = $1 AND p.dueDate != '0'
+      GROUP BY p.id, p.tenantID
+      ORDER BY p.id;
+    `;
     const properties = await db.query(propertyQuery, [ownerID]);
 
     // Check if properties exist
@@ -495,9 +541,11 @@ app.post("/api/property-list", async (req, res) => {
       return res.status(404).json({ error: "No properties found" });
     }
 
-    // Preparing the response
+    // Preparing the response with tenantID included
     const propertyList = properties.rows.map((p) => ({
+      propertyID: p.propertyid,
       propertyAddress: p.propertyaddress,
+      tenantID: p.tenantid,
       totalProfit: p.totalprofit || 0,
       status: p.tenantid ? "On-rent" : "Vacant",
     }));
@@ -603,7 +651,6 @@ app.put("/api/admin/edit-user", async (req, res) => {
   const spaceIndex = userName.indexOf(' ');
   const firstName = spaceIndex === -1 ? userName : userName.substring(0, spaceIndex);
   const lastName = spaceIndex === -1 ? '' : userName.substring(spaceIndex + 1);
-
   try {
     // Update owner information in the database
     await db.query(
@@ -627,9 +674,10 @@ app.post("/api/owner-details", async (req, res) => {
     // Query to fetch owner details based on ownerID
     const ownerDetailsQuery = `
       SELECT
-        CONCAT(ui.firstName, ' ', ui.lastName) AS ownerName,
+      CONCAT(ui.firstName, ' ', ui.lastName) AS ownerName,
         ui.email AS email,
-        ui.phone AS phone
+        ui.phone AS phone,
+        ui.DOB AS DOB
       FROM Owner o
       JOIN UserInformation ui ON o.userID = ui.id
       WHERE o.id = $1;
@@ -643,10 +691,19 @@ app.post("/api/owner-details", async (req, res) => {
     }
 
     // Extract owner details
-    const { ownername, email, phone } = ownerDetails.rows[0];
-    const ownerName = ownername;
+    const { ownername, email, phone, dob } = ownerDetails.rows[0];
+    var correctDate = new Date(dob).toLocaleDateString();;
+    // Parse the input date
+    const parsedDate = new Date(correctDate);
+
+    // Get year, month, and day components from the parsed date
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0'); // Adding 1 to month as it's zero-based
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+
+    const DOB = `${year}-${month}-${day}`;
     // Prepare and send the response
-    res.status(200).json({ ownerName, email, phone, success: true });
+    res.status(200).json({ ownerName: ownername, email, phone, DOB, success: true });
   } catch (error) {
     console.error("Error while fetching owner details:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -664,7 +721,8 @@ app.post("/api/tenant-details", async (req, res) => {
       SELECT
         CONCAT(ui.firstName, ' ', ui.lastName) AS tenantName,
         ui.email AS email,
-        ui.phone AS phone
+        ui.phone AS phone,
+        ui.DOB AS DOB
       FROM Tenant t
       JOIN UserInformation ui ON t.userID = ui.id
       WHERE t.id = $1;
@@ -678,10 +736,20 @@ app.post("/api/tenant-details", async (req, res) => {
     }
 
     // Extract owner details
-    const { tenantname, email, phone } = tenantDetails.rows[0];
-    const tenantName = tenantname;
+    const { tenantname, email, phone, dob } = tenantDetails.rows[0];
+
+    var correctDate = new Date(dob).toLocaleDateString();;
+    // Parse the input date
+    const parsedDate = new Date(correctDate);
+
+    // Get year, month, and day components from the parsed date
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0'); // Adding 1 to month as it's zero-based
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+
+    const DOB = `${year}-${month}-${day}`;
     // Prepare and send the response
-    res.status(200).json({ tenantName, email, phone, success: true });
+    res.status(200).json({ tenantName : tenantname, email, phone, DOB , success: true });
   } catch (error) {
     console.error("Error while fetching tenant details:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -722,6 +790,8 @@ app.post('/api/reset-password', async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
