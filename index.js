@@ -428,25 +428,6 @@ app.post("/api/month-analytics", async (req, res) => {
   }
 });
 
-// Helper function to get the current month name with the first character capitalized
-function getCurrentMonthName(monthIndex) {
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  return months[monthIndex - 1];
-}
-
 // API 10: Monthly Analytics
 app.post("/api/monthly-analytics", async (req, res) => {
   const { ownerID } = req.body;
@@ -502,6 +483,25 @@ app.post("/api/monthly-analytics", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// Helper function to get the current month name with the first character capitalized
+function getCurrentMonthName(monthIndex) {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return months[monthIndex - 1];
+}
 
 // API 11: Add Property
 app.post("/api/add-property", async (req, res) => {
@@ -981,6 +981,59 @@ app.post("/api/admin/unban-user", async (req, res) => {
   } catch (error) {
     console.error("Error unbanning user:", error);
     return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 29: Admin - Fetch total month wise profits
+app.post("/api/admin/monthly-profits", async (req, res) => {
+  try {
+    // Find the first record registered in RentTransaction table to get the initial transaction date
+    const firstTransactionQuery = `
+      SELECT EXTRACT(YEAR FROM PaymentDateTime) AS year, EXTRACT(MONTH FROM PaymentDateTime) AS month
+      FROM RentTransaction
+      ORDER BY PaymentDateTime ASC
+      LIMIT 1;
+    `;
+    const firstTransactionResult = await db.query(firstTransactionQuery);
+
+    // Check if there is any transaction data
+    if (firstTransactionResult.rows.length === 0) {
+      return res.status(404).json({ error: "No transaction data found" });
+    }
+
+    // Retrieving the initial transaction year and month
+    const startYear = firstTransactionResult.rows[0].year;
+    const startMonth = firstTransactionResult.rows[0].month;
+
+    // Retrieving the current date's year and month
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+
+    // Initialize array for storing monthly profits
+    const monthlyProfits = [
+      ["Month", "Rent Collected"] // Header for the output
+    ];
+
+    // Loop through each month and calculate profits
+    for (let year = startYear; year <= currentYear; year++) {
+      for (let month = (year === startYear ? startMonth : 1); month <= (year === currentYear ? currentMonth : 12); month++) {
+        const monthlyProfitQuery = `
+          SELECT SUM(amount) AS profit
+          FROM RentTransaction
+          WHERE EXTRACT(YEAR FROM PaymentDateTime) = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+        `;
+        const monthlyProfitResult = await db.query(monthlyProfitQuery, [year, month]);
+        const profit = monthlyProfitResult.rows[0].profit || 0;
+        const monthName = getCurrentMonthName(month);
+        monthlyProfits.push([`${monthName} ${year}`, parseInt(profit)]);
+      }
+    }
+
+    res.status(200).json({ monthlyProfits, success: true });
+  } catch (error) {
+    console.error("Error fetching total month wise profits:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
