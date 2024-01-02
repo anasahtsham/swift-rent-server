@@ -561,8 +561,7 @@ app.post("/api/add-property", async (req, res) => {
   }
 });
 
-// //API 12: Property List
-
+//API 12: Property List
 app.post("/api/property-list", async (req, res) => {
   const { ownerID } = req.body;
   try {
@@ -1094,6 +1093,57 @@ app.post("/api/admin/monthly-profits", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// API 30: Admin - Properties Data
+app.post("/api/admin/properties-data", async (req, res) => {
+  try {
+    const propertyQuery = `
+      SELECT 
+        p.id AS propertyID, 
+        p.ownerID,
+        p.propertyaddress AS address, 
+        p.tenantID, 
+        COALESCE(CONCAT(oi.firstname, ' ', oi.lastname), '') AS ownerName,
+        COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
+        p.rent,
+        CASE
+          WHEN p.tenantID <> 0 THEN 'On-rent'
+          ELSE 'Vacant'
+        END AS status
+      FROM Property p
+      LEFT JOIN Owner o ON p.ownerID = o.id
+      LEFT JOIN UserInformation oi ON o.userID = oi.id
+      LEFT JOIN Tenant t ON p.tenantID = t.id
+      LEFT JOIN UserInformation ui ON t.userID = ui.id
+      WHERE p.dueDate != '0'
+      ORDER BY p.id;
+    `;
+    
+    const properties = await db.query(propertyQuery);
+
+    if (properties.rows.length === 0) {
+      return res.status(404).json({ error: "No properties found" });
+    }
+
+    const propertyList = properties.rows.map((p) => ({
+      propertyID: p.propertyid,
+      ownerID: p.ownerid,
+      ownerName: p.ownername,
+      tenantID: p.tenantid,
+      tenantName: p.tenantname,
+      propertyAddress: p.address,
+      rent: p.rent,
+      status: p.status,
+    }));
+    
+    res.status(200).json({ propertyList, success: true });
+  } catch (error) {
+    console.error("Error fetching properties:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 
 
