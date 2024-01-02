@@ -1191,6 +1191,36 @@ app.post("/api/receive-rent", async (req, res) => {
   }
 });
 
+// API 32: Admin - Update Bug Status
+app.put("/api/admin/update-bug-status", async (req, res) => {
+  // Inputs
+  const { bugID, bugStatus } = req.body;
+  
+  try {
+    // Check if bugID exists in ReportedBug table
+    const bugQuery = await db.query(
+      "SELECT * FROM ReportedBug WHERE id = $1",
+      [bugID]
+    );
+
+    // Check if the bugID is valid and exists
+    if (bugQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Bug not found" });
+    }
+
+    // Update the bug status
+    await db.query(
+      "UPDATE ReportedBug SET bugStatus=$1 WHERE id = $2",
+      [bugStatus, bugID]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error updating bug status:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
