@@ -1143,9 +1143,53 @@ app.post("/api/admin/properties-data", async (req, res) => {
   }
 });
 
+// API 31: Owner - Receive Rent
+app.post("/api/receive-rent", async (req, res) => {
+  // Inputs
+  const { propertyID, rent } = req.body;
+  console.log(rent);
+  try {
+    // Get the current month and year dynamically
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // Adding 1 as getMonth() returns zero-based month
+    const currentYear = currentDate.getFullYear();
 
+    // Find a row in RentTransaction table for the given propertyID, matching the current month and year
+    const rentQuery = await db.query(
+      ` SELECT * FROM RentTransaction 
+        WHERE propertyID = $1 
+        AND EXTRACT(MONTH FROM paymentDateTime) = $2 
+        AND EXTRACT(YEAR FROM paymentDateTime) = $3 
+        AND amount = 1`,
+      [propertyID, currentMonth, currentYear]
+    );
 
+    if (rentQuery.rows.length === 0) {
+      return res.status(404).json({ error: `
+      No eligible rent transaction found for the property in the current month and year` });
+    }
 
+    // Update the amount to the received rent
+    const updateRentQuery = await db.query(
+      ` UPDATE RentTransaction SET amount = $1 
+        WHERE propertyID = $2 
+        AND EXTRACT(MONTH FROM paymentDateTime) = $3 
+        AND EXTRACT(YEAR FROM paymentDateTime) = $4 
+        AND amount = 1`,
+      [rent, propertyID, currentMonth, currentYear]
+    );
+
+    // Check if the update was successful
+    if (updateRentQuery.rowCount === 1) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(500).json({ error: "Failed to update rent amount" });
+    }
+  } catch (error) {
+    console.error("Error during receiving rent:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
