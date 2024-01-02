@@ -398,7 +398,41 @@ app.post("/api/month-analytics", async (req, res) => {
             FROM RentTransaction
             WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
         `;
-
+    const pendingQuery = `
+            SELECT 
+                CASE 
+                    WHEN active_properties > 0 THEN (active_properties - COALESCE(rent_transactions, 0))
+                    ELSE active_properties
+                END AS pendingrent
+            FROM 
+                (
+                    SELECT 
+                        COUNT(p.id) AS active_properties
+                    FROM 
+                        Property p
+                    WHERE 
+                        p.ownerID = $1
+                        AND p.dueDate != '0'
+                        AND p.tenantID != 0
+                ) AS active_props
+            LEFT JOIN 
+                (
+                    SELECT 
+                        COUNT(rt.propertyID) AS rent_transactions
+                    FROM 
+                        RentTransaction rt
+                    JOIN 
+                        Property p ON p.id = rt.propertyID
+                    WHERE 
+                        p.ownerID = $1
+                        AND p.dueDate != '0'
+                        AND rt.ownerID = $1
+                        AND EXTRACT(MONTH FROM rt.paymentDateTime) = $2
+                        AND EXTRACT(YEAR FROM rt.paymentDateTime) = $3
+                    GROUP BY 
+                        p.ownerID
+                ) AS rent_trans ON 1=1;
+        `;
     // Executing queries
     const totalProfitResult = await db.query(profitQuery, [
       ownerID,
@@ -409,6 +443,7 @@ app.post("/api/month-analytics", async (req, res) => {
       ownerID,
       currentMonth,
     ]);
+    const pendingRentResult = await db.query(pendingQuery, [ownerID, currentMonth, currentYear]);
 
     // Preparing the response
     const response = {
@@ -417,7 +452,7 @@ app.post("/api/month-analytics", async (req, res) => {
       totalProfit: totalProfitResult.rows[0].totalprofit || 0,
       totalProperty: totalPropertyResult.rows[0].totalproperty || 0,
       totalReceived: totalReceivedResult.rows[0].totalreceived || 0,
-      pendingRent: String(parseInt(totalPropertyResult.rows[0].totalproperty) - parseInt(totalReceivedResult.rows[0].totalreceived)) || 0,
+      pendingRent: pendingRentResult.rows[0].pendingrent || 0,
       success: true,
     };
 
@@ -526,15 +561,23 @@ app.post("/api/add-property", async (req, res) => {
 app.post("/api/property-list", async (req, res) => {
   const { ownerID } = req.body;
   try {
-    // Query to get the properties along with tenantID
+    // Query to fetch property details including tenant name and rent status
     const propertyQuery = `
-      SELECT p.id as propertyID, p.propertyaddress, p.tenantID, SUM(rt.amount) as totalProfit
+      SELECT 
+          p.id AS propertyID, 
+          p.propertyaddress AS address, 
+          p.tenantID, 
+          COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
+          SUM(rt.amount) AS totalProfit
       FROM Property p
       LEFT JOIN RentTransaction rt ON p.id = rt.propertyID
+      LEFT JOIN Tenant t ON p.tenantID = t.id
+      LEFT JOIN UserInformation ui ON t.userID = ui.id
       WHERE p.ownerID = $1 AND p.dueDate != '0'
-      GROUP BY p.id, p.tenantID
+      GROUP BY p.id, p.propertyaddress, p.tenantID, ui.firstname, ui.lastname
       ORDER BY p.id;
     `;
+
     const properties = await db.query(propertyQuery, [ownerID]);
 
     // Check if properties exist
@@ -542,13 +585,37 @@ app.post("/api/property-list", async (req, res) => {
       return res.status(404).json({ error: "No properties found" });
     }
 
-    // Preparing the response with tenantID included
+    // Check rent status for the current month
+    const currentMonthRentQuery = `
+      SELECT COUNT(*) as propertyCount
+      FROM Property
+      WHERE dueDate != '0'
+    `;
+    const propertyCount = await db.query(currentMonthRentQuery);
+    const propertiesWithRentTransactionQuery = `
+      SELECT COUNT(*) as propertyCount
+      FROM RentTransaction
+      WHERE EXTRACT(MONTH FROM PaymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+      AND EXTRACT(YEAR FROM PaymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+    `;
+    const propertiesWithRentTransaction = await db.query(propertiesWithRentTransactionQuery);
+
+    let rentStatus = "Pending";
+    if (propertiesWithRentTransaction.rows[0].propertycount === propertyCount.rows[0].propertycount) {
+      rentStatus = "Collected";
+    } else if (propertiesWithRentTransaction.rows[0].propertycount > 0) {
+      rentStatus = "Collect";
+    }
+
+    // Prepare the property list response
     const propertyList = properties.rows.map((p) => ({
       propertyID: p.propertyid,
-      propertyAddress: p.propertyaddress,
       tenantID: p.tenantid,
       totalProfit: p.totalprofit || 0,
+      tenantName: p.tenantname,
+      propertyAddress: p.address,
       status: p.tenantid ? "On-rent" : "Vacant",
+      rentStatus: rentStatus,
     }));
 
     res.status(200).json({ propertyList, success: true });
@@ -801,7 +868,7 @@ app.post('/api/reset-password', async (req, res) => {
 });
 
 // API 21: Owner - Register Tenant to Property
-app.post("/api/owner/register-tenant", async (req, res) => {
+app.post("/api/register-tenant", async (req, res) => {
   // Inputs
   const { propertyID, tenantEmailorPhone } = req.body;
   try {
@@ -845,7 +912,7 @@ app.post("/api/owner/register-tenant", async (req, res) => {
 });
 
 // API 22: Owner - Un-register Tenant from Property
-app.post("/api/owner/unregister-tenant", async (req, res) => {
+app.post("/api/unregister-tenant", async (req, res) => {
   // Inputs
   const { propertyID } = req.body;
   try {
@@ -1036,6 +1103,8 @@ app.post("/api/admin/monthly-profits", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
