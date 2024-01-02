@@ -443,7 +443,11 @@ app.post("/api/month-analytics", async (req, res) => {
       ownerID,
       currentMonth,
     ]);
-    const pendingRentResult = await db.query(pendingQuery, [ownerID, currentMonth, currentYear]);
+    const pendingRentResult = await db.query(pendingQuery, [
+      ownerID, 
+      currentMonth, 
+      currentYear
+    ]);
 
     // Preparing the response
     const response = {
@@ -557,67 +561,54 @@ app.post("/api/add-property", async (req, res) => {
   }
 });
 
-// API 12: Property List
+// //API 12: Property List
+
 app.post("/api/property-list", async (req, res) => {
   const { ownerID } = req.body;
   try {
-    // Query to fetch property details including tenant name and rent status
     const propertyQuery = `
-      SELECT 
-          p.id AS propertyID, 
-          p.propertyaddress AS address, 
-          p.tenantID, 
-          COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
-          SUM(rt.amount) AS totalProfit
-      FROM Property p
-      LEFT JOIN RentTransaction rt ON p.id = rt.propertyID
-      LEFT JOIN Tenant t ON p.tenantID = t.id
-      LEFT JOIN UserInformation ui ON t.userID = ui.id
-      WHERE p.ownerID = $1 AND p.dueDate != '0'
-      GROUP BY p.id, p.propertyaddress, p.tenantID, ui.firstname, ui.lastname
-      ORDER BY p.id;
+    SELECT 
+    p.id AS propertyID, 
+    p.propertyaddress AS address, 
+    p.tenantID, 
+    COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
+    SUM(rt.amount) AS totalProfit,
+      CASE
+        WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+                      AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+                      THEN rt.amount ELSE 0 END) = 1 THEN 'Collect'
+      WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+                      AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+                      THEN rt.amount ELSE 0 END) = 0 THEN 'Pending'
+        ELSE 'Collected'
+      END AS rentStatus,
+      CASE
+        WHEN p.tenantID <> 0 THEN 'On-rent'
+        ELSE 'Vacant'
+      END AS status
+    FROM Property p
+    LEFT JOIN RentTransaction rt ON p.id = rt.propertyID
+    LEFT JOIN Tenant t ON p.tenantID = t.id
+    LEFT JOIN UserInformation ui ON t.userID = ui.id
+    WHERE p.ownerID = $1 AND p.dueDate != '0'
+    GROUP BY p.id, p.propertyaddress, p.tenantID, ui.firstname, ui.lastname, rt.propertyID
+    ORDER BY p.id;
     `;
-
     const properties = await db.query(propertyQuery, [ownerID]);
 
-    // Check if properties exist
     if (properties.rows.length === 0) {
       return res.status(404).json({ error: "No properties found" });
     }
 
-    // Check rent status for the current month
-    const currentMonthRentQuery = `
-      SELECT COUNT(*) as propertyCount
-      FROM Property
-      WHERE dueDate != '0'
-    `;
-    const propertyCount = await db.query(currentMonthRentQuery);
-    const propertiesWithRentTransactionQuery = `
-      SELECT COUNT(*) as propertyCount
-      FROM RentTransaction
-      WHERE EXTRACT(MONTH FROM PaymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
-      AND EXTRACT(YEAR FROM PaymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-    `;
-    const propertiesWithRentTransaction = await db.query(propertiesWithRentTransactionQuery);
-
-    let rentStatus = "Pending";
-    if (propertiesWithRentTransaction.rows[0].propertycount === propertyCount.rows[0].propertycount) {
-      rentStatus = "Collected";
-    } else if (propertiesWithRentTransaction.rows[0].propertycount > 0) {
-      rentStatus = "Collect";
-    }
-
-    // Prepare the property list response
     const propertyList = properties.rows.map((p) => ({
       propertyID: p.propertyid,
       tenantID: p.tenantid,
       totalProfit: p.totalprofit || 0,
       tenantName: p.tenantname,
       propertyAddress: p.address,
-      status: p.tenantid ? "On-rent" : "Vacant",
-      rentStatus: rentStatus,
+      status: p.status,
+      rentStatus: p.rentstatus,
     }));
-
     res.status(200).json({ propertyList, success: true });
   } catch (error) {
     console.error("Error during property list:", error);
