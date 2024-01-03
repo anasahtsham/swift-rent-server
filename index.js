@@ -576,7 +576,7 @@ app.post("/api/property-list", async (req, res) => {
         WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
                       AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
                       THEN rt.amount ELSE 0 END) = 1 THEN 'Collect'
-      WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+        WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
                       AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
                       THEN rt.amount ELSE 0 END) = 0 THEN 'Pending'
         ELSE 'Collected'
@@ -1217,6 +1217,70 @@ app.put("/api/admin/update-bug-status", async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error updating bug status:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 33: Tenant Rental List (Updated)
+app.post("/api/rental-list", async (req, res) => {
+  // Input
+  const { tenantID } = req.body;
+
+  try {
+    // Query to fetch properties rented by the tenant along with rent status
+    const rentalListQuery = await db.query(`
+      SELECT property.id AS propertyID, property.ownerID, property.PropertyAddress,
+             property.rent, property.dueDate,
+             CASE 
+               WHEN rt.id IS NOT NULL THEN 'Paid'
+               ELSE 'Pending'
+             END AS rentStatus
+      FROM Property
+      LEFT JOIN RentTransaction rt
+      ON property.id = rt.propertyID
+      AND rt.tenantID = $1
+      AND EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+      AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+      WHERE property.tenantID = $1;`,
+      [tenantID]
+    );
+
+    // Check if any properties were found
+    if (rentalListQuery.rows.length > 0) {
+      const rentalList = rentalListQuery.rows;
+      return res.status(200).json({ rentalList, success: true });
+    } else {
+      // No properties found for the tenant
+      return res.status(400).json({ error: "No properties found for the tenant" });
+    }
+  } catch (error) {
+    console.error("Error fetching tenant rental list:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// API 34: Tenant Request Cash Collection
+app.post("/api/request-cash-collection", async (req, res) => {
+  // Inputs
+  const { ownerID, tenantID, propertyID, paymentType } = req.body;
+
+  try {
+    // Create a new entry in the RentTransaction table
+    const rentTransactionQuery = await db.query(`
+      INSERT INTO RentTransaction (propertyID, ownerID, tenantID, amount, paymentType) 
+      VALUES ($1, $2, $3, 1, $4);`,
+      [propertyID, ownerID, tenantID, paymentType]
+    );
+
+    // Check if the entry was successfully created
+    if (rentTransactionQuery.rowCount > 0) {
+      return res.status(200).json({ success: true });
+    } else {
+      // Unable to create the rent transaction
+      return res.status(400).json({ error: "Unable to create rent transaction" });
+    }
+  } catch (error) {
+    console.error("Error requesting rent collection:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
