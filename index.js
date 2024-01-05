@@ -386,7 +386,8 @@ app.post("/api/month-analytics", async (req, res) => {
     const profitQuery = `
             SELECT SUM(amount) as totalProfit
             FROM RentTransaction
-            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2
+            AND amount != 1;
         `;
     const propertyQuery = `
             SELECT COUNT(*) as totalProperty
@@ -396,7 +397,8 @@ app.post("/api/month-analytics", async (req, res) => {
     const receivedQuery = `
             SELECT COUNT(*) as totalReceived
             FROM RentTransaction
-            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+            WHERE ownerID = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2
+            AND amount != 1;
         `;
     const pendingQuery = `
             SELECT 
@@ -505,7 +507,8 @@ app.post("/api/monthly-analytics", async (req, res) => {
         const monthQuery = `
                     SELECT SUM(amount) as profit
                     FROM RentTransaction
-                    WHERE ownerID = $1 AND EXTRACT(YEAR FROM PaymentDateTime) = $2 AND EXTRACT(MONTH FROM PaymentDateTime) = $3;
+                    WHERE ownerID = $1 AND EXTRACT(YEAR FROM PaymentDateTime) = $2 AND EXTRACT(MONTH FROM PaymentDateTime) = $3
+                    AND amount != 1;
                 `;
         const monthResult = await db.query(monthQuery, [ownerID, year, month]);
         monthlyData.push({
@@ -602,7 +605,7 @@ app.post("/api/property-list", async (req, res) => {
     const propertyList = properties.rows.map((p) => ({
       propertyID: p.propertyid,
       tenantID: p.tenantid,
-      totalProfit: p.totalprofit || 0,
+      totalProfit: p.totalprofit == 1 ? 0 : p.totalprofit || 0,
       tenantName: p.tenantname,
       propertyAddress: p.address,
       status: p.status,
@@ -1076,9 +1079,10 @@ app.post("/api/admin/monthly-profits", async (req, res) => {
     for (let year = startYear; year <= currentYear; year++) {
       for (let month = (year === startYear ? startMonth : 1); month <= (year === currentYear ? currentMonth : 12); month++) {
         const monthlyProfitQuery = `
-          SELECT SUM(amount) AS profit
-          FROM RentTransaction
-          WHERE EXTRACT(YEAR FROM PaymentDateTime) = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2;
+            SELECT SUM(amount) AS profit
+            FROM RentTransaction
+            WHERE EXTRACT(YEAR FROM PaymentDateTime) = $1 AND EXTRACT(MONTH FROM PaymentDateTime) = $2
+            AND amount != 1;
         `;
         const monthlyProfitResult = await db.query(monthlyProfitQuery, [year, month]);
         const profit = monthlyProfitResult.rows[0].profit || 0;
