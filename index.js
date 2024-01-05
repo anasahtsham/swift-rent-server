@@ -489,10 +489,10 @@ app.post("/api/monthly-analytics", async (req, res) => {
     }
 
     // Preparing to loop through months
-    const startYear = firstTransactionResult.rows[0].year;
-    const startMonth = firstTransactionResult.rows[0].month;
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+    const startYear = parseInt(firstTransactionResult.rows[0].year);
+    const startMonth = parseInt(firstTransactionResult.rows[0].month);
+    const currentYear = parseInt(new Date().getFullYear());
+    const currentMonth = parseInt(new Date().getMonth() + 1); // JavaScript months are 0-indexed
     let monthlyData = [];
 
     // Loop through each month
@@ -671,43 +671,43 @@ app.post("/api/admin/list-tenants", async (req, res) => {
   }
 });
 
-// API 15: Admin - Delete Owner
-app.delete("/api/admin/delete-owner", async (req, res) => {
-  const { ownerID } = req.body; // Read ownerID from the request body
-  try {
-    // Delete the owner instance from the database
-    const result = await db.query("DELETE FROM Owner WHERE id = $1", [ownerID]); 
+// // API 15: Admin - Delete Owner
+// app.delete("/api/admin/delete-owner", async (req, res) => {
+//   const { ownerID } = req.body; // Read ownerID from the request body
+//   try {
+//     // Delete the owner instance from the database
+//     const result = await db.query("DELETE FROM Owner WHERE id = $1", [ownerID]); 
 
-    // Check if the deletion was successful
-    if (result.rowCount === 1) {
-      res.status(200).json({ success: true });
-    } else {
-      res.status(404).json({ error: "Owner not found" });
-    }
-  } catch (error) {
-    console.error("Error while deleting owner:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+//     // Check if the deletion was successful
+//     if (result.rowCount === 1) {
+//       res.status(200).json({ success: true });
+//     } else {
+//       res.status(404).json({ error: "Owner not found" });
+//     }
+//   } catch (error) {
+//     console.error("Error while deleting owner:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
 
-// API 16: Admin - Delete Tenant
-app.delete("/api/admin/delete-tenant", async (req, res) => {
-  const { tenantID } = req.body; // Read tenantID from the request body
-  try {
-    // Delete the tenant instance from the database
-    const result = await db.query("DELETE FROM Tenant WHERE id = $1", [tenantID]);
+// // API 16: Admin - Delete Tenant
+// app.delete("/api/admin/delete-tenant", async (req, res) => {
+//   const { tenantID } = req.body; // Read tenantID from the request body
+//   try {
+//     // Delete the tenant instance from the database
+//     const result = await db.query("DELETE FROM Tenant WHERE id = $1", [tenantID]);
 
-    // Check if the deletion was successful
-    if (result.rowCount === 1) {
-      res.status(200).json({ success: true });
-    } else {
-      res.status(404).json({ error: "Tenant not found" });
-    }
-  } catch (error) {
-    console.error("Error while deleting tenant:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+//     // Check if the deletion was successful
+//     if (result.rowCount === 1) {
+//       res.status(200).json({ success: true });
+//     } else {
+//       res.status(404).json({ error: "Tenant not found" });
+//     }
+//   } catch (error) {
+//     console.error("Error while deleting tenant:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
 
 // API 17: Admin - Edit User
 app.put("/api/admin/edit-user", async (req, res) => {
@@ -1284,6 +1284,8 @@ app.post("/api/request-cash-collection", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// API 35: Delete Property
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
