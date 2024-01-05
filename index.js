@@ -570,11 +570,24 @@ app.post("/api/property-list", async (req, res) => {
   try {
     const propertyQuery = `
     SELECT 
-    p.id AS propertyID, 
-    p.propertyaddress AS address, 
-    p.tenantID, 
-    COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
-    SUM(rt.amount) AS totalProfit,
+      p.id AS propertyID, 
+      p.propertyaddress AS address, 
+      p.tenantID, 
+      COALESCE(CONCAT(ui.firstname, ' ', ui.lastname), '') AS tenantName,
+      CASE
+        WHEN 
+      SUM(CASE 
+        WHEN rt.amount > 1 
+        THEN rt.amount 
+        ELSE 0 END) 
+      > 1 
+      THEN 
+      SUM(CASE 
+        WHEN rt.amount > 1 
+        THEN rt.amount 
+        ELSE 0 END)
+        ELSE NULL
+      END AS totalProfit,
       CASE
         WHEN SUM(CASE WHEN EXTRACT(MONTH FROM rt.paymentDateTime) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
                       AND EXTRACT(YEAR FROM rt.paymentDateTime) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
