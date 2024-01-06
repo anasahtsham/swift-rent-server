@@ -1051,7 +1051,7 @@ app.post("/api/admin/monthly-profits", async (req, res) => {
 
     // Initialize array for storing monthly profits
     const monthlyProfits = [
-      ["Month", "Rent Collected"] // Header for the output
+      ["Month", "Rent Collected (PKR)"] // Header for the output
     ];
 
     // Loop through each month and calculate profits
