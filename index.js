@@ -119,13 +119,16 @@ app.post("/api/signup-contact", async (req, res) => {
       const { email: userStoredEmail, phone: userStoredPhone } = userCredentialsQuery.rows[0];
 
       // Check if both email and phone are unchanged
-      if (email === userStoredEmail && phone === userStoredPhone) {
+      if (
+        (email === userStoredEmail || (email === "" && userStoredEmail === null)) &&
+        (phone === userStoredPhone || (phone === "" && userStoredPhone === null))
+      ) {
         return res.status(200).json({ success: true });
       } else {
         let errorResponse = null;
 
         // If both are not the same, check each one individually
-        if (email !== userStoredEmail) {
+        if (email !== userStoredEmail && email !== "") {
           // Check if the new email exists in the database
           const emailQuery = await db.query(
             "SELECT * FROM UserInformation WHERE email = $1",
@@ -137,7 +140,7 @@ app.post("/api/signup-contact", async (req, res) => {
           }
         }
 
-        if (phone !== userStoredPhone) {
+        if (phone !== userStoredPhone && phone !== "") {
           // Check if the new phone exists in the database
           const phoneQuery = await db.query(
             "SELECT * FROM UserInformation WHERE phone = $1",
@@ -158,7 +161,7 @@ app.post("/api/signup-contact", async (req, res) => {
     } else {
       // Check if the email or phone is already associated with an existing account
       const userQuery = await db.query(
-        "SELECT * FROM UserInformation WHERE email = $1 OR phone = $2",
+        "SELECT * FROM UserInformation WHERE (email = $1 OR $1 = '') AND (phone = $2 OR $2 = '')",
         [email, phone]
       );
 
@@ -179,9 +182,11 @@ app.post("/api/signup-contact", async (req, res) => {
 // API 3: Register Account
 app.post("/api/register-account", async (req, res) => {
   //Inputs
-  const { userType, firstName, lastName, DOB, email, phone, password } =
-    req.body;
+  const { userType, firstName, lastName, DOB, password } = req.body;
+  let { email, phone} = req.body
   try {
+    email = email === "" ? null : email;
+    phone = phone === "" ? null : phone;
     //Creating a new record in user table
     const userQuery = await db.query(`
       INSERT INTO UserInformation (firstname, lastname, dob, email, phone, md5password) 
@@ -693,8 +698,10 @@ app.post("/api/admin/list-tenants", async (req, res) => {
 
 // API 17: Admin - Edit User
 app.put("/api/admin/edit-user", async (req, res) => {
-  const { userID, userName, DOB, email, phone } = req.body;
-  
+  const { userID, userName, DOB } = req.body;
+  let { email, phone } = req.body;
+  email = email === "" ? null : email;
+  phone = phone === "" ? null : phone;
   // Extracting firstName and lastName from userName
   const spaceIndex = userName.indexOf(' ');
   const firstName = spaceIndex === -1 ? userName : userName.substring(0, spaceIndex);
