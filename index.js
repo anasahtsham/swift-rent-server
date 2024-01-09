@@ -40,7 +40,7 @@ app.use(morgan("tiny"));
 app.post("/api/admin/login", async (req, res) => {
   //Inputs
   const { userName, password } = req.body;
-    if (userName == "admin" && password == "admin") {
+    if (userName == "admin" && password == "unpredictable69") {
       return res.status(200).json({ success: true });
     } else {
       return res.status(400).json({ error: "Incorrect Credentials" });
@@ -286,7 +286,7 @@ app.post("/api/report-bug", async (req, res) => {
   //Inputs
   const { userID, userType, bugType, bugDescription } = req.body;
   try {
-    const bugStatus = 'P';
+    const bugStatus = 'F';
     const userQuery = await db.query(
       "INSERT INTO ReportedBug (userID, userType, bugType, bugDescription, bugStatus) VALUES ($1,$2,$3,$4,$5) ",
       [userID, userType, bugType, bugDescription, bugStatus]
@@ -653,7 +653,8 @@ app.post("/api/admin/list-owners", async (req, res) => {
           ELSE 'un-banned'
         END AS status
       FROM Owner o
-      JOIN UserInformation ui ON o.userID = ui.id;
+      JOIN UserInformation ui ON o.userID = ui.id
+      order by o.id;
     `;
     const owners = await db.query(ownersQuery);
 
@@ -681,7 +682,8 @@ app.post("/api/admin/list-tenants", async (req, res) => {
           ELSE 'un-banned'
         END AS status
       FROM Tenant t
-      JOIN UserInformation ui ON t.userID = ui.id;
+      JOIN UserInformation ui ON t.userID = ui.id
+      order by t.id;
     `;
     const tenants = await db.query(tenantsQuery);
 
@@ -1243,7 +1245,7 @@ app.post("/api/rental-list", async (req, res) => {
       SELECT property.id AS propertyID, property.ownerID, property.PropertyAddress,
              property.rent, property.dueDate,
              CASE 
-               WHEN rt.id IS NOT NULL THEN 'Paid'
+               WHEN rt.id IS NOT NULL THEN 'Requested'
                ELSE 'Pending'
              END AS rentStatus
       FROM Property
