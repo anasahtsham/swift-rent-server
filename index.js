@@ -692,9 +692,9 @@ app.post("/api/admin/list-tenants", async (req, res) => {
   }
 });
 
-// // API 15: Admin - Delete Owner - Deprecated
+// // API 15: Admin - Delete Owner - Obsolete for new requirements
 
-// // API 16: Admin - Delete Tenant - Deprecated
+// // API 16: Admin - Delete Tenant - Obsolete for new requirements
 
 // API 17: Admin - Edit User
 app.put("/api/admin/edit-user", async (req, res) => {
@@ -876,6 +876,27 @@ app.post("/api/register-tenant", async (req, res) => {
     }
 
     const tenantID = tenantQuery.rows[0].id;
+
+    // Get the ownerID from the Property table using the propertyID
+    const ownerQuery = await db.query(
+      "SELECT ownerID FROM Property WHERE id = $1",
+      [propertyID]
+    );
+    console.log(ownerQuery.rows[0]);
+
+    // Check if the owner and tenant have the same userID
+    if (ownerQuery.rows.length > 0) {
+      const ownerID = ownerQuery.rows[0].ownerid;
+      // Fetch the owner's userID from the Owner table
+      const ownerUserQuery = await db.query(
+        "SELECT userID FROM Owner WHERE id = $1",
+        [ownerID]
+      );
+      // Compare the owner's userID with the userID obtained from userQuery
+      if (ownerUserQuery.rows.length > 0 && ownerUserQuery.rows[0].userid === userID) {
+        return res.status(401).json({ error: "Owner cannot register as a tenant to their own property" });
+      }
+    }
 
     // Update the property's tenantID with the found tenantID
     await db.query(
