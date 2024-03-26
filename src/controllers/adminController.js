@@ -12,3 +12,9 @@ export const login = async (req, res) => {
     return res.status(400).json({ error: "Incorrect Credentials" });
   }
 };
+
+//API 1: Analytics Page
+export const analyticsPage = async (req, res) => {
+  //Inputs
+  const { userID } = req.body;
+};

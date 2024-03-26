@@ -2,7 +2,7 @@ import db from "../config/config.js";
 import { getCurrentMonthName } from "../helpers/index.js";
 import { md5 } from "js-md5";
 
-//API 1: Register Account
+//Auth API 1: Register Account
 export const registerAccount = async (req, res) => {
   try {
     const {
@@ -62,7 +62,7 @@ export const registerAccount = async (req, res) => {
   }
 };
 
-//API 2: Login
+//Auth API 2: Login
 export const login = async (req, res) => {
   const { emailOrPhone, userPassword } = req.body;
   try {
@@ -102,7 +102,7 @@ export const login = async (req, res) => {
   }
 };
 
-//API 3: Register Alternate Role
+//Auth API 3: Register Alternate Role
 export const registerAlternateRole = async (req, res) => {
   try {
     const { userID, userType } = req.body;
@@ -144,6 +144,37 @@ export const registerAlternateRole = async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error in registering different role:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+//Auth API 4: Verify Credentials: Check if the email and phone provided are not already present in the database
+export const verifyCredentials = async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+
+    //Check if the email is already present
+    const emailQuery = await db.query(
+      "SELECT * FROM UserInformation WHERE email = $1",
+      [email]
+    );
+    if (emailQuery.rows.length > 0) {
+      return res.status(400).json({ error: "Credentials in use." });
+    }
+
+    //Check if the phone is already present
+    const phoneQuery = await db.query(
+      "SELECT * FROM UserInformation WHERE phone = $1",
+      [phone]
+    );
+    if (phoneQuery.rows.length > 0) {
+      return res.status(400).json({ error: "Credentials in use." });
+    }
+
+    //Return success status
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in verifying credentials:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };

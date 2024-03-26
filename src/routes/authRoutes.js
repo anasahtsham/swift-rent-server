@@ -9,5 +9,6 @@ authRouter.post(
   "/register-alternate-role",
   authController.registerAlternateRole
 );
+authRouter.post("/verify-credentials", authController.verifyCredentials);
 
 export default authRouter;

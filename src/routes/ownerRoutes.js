@@ -3,6 +3,6 @@ const ownerRouter = express.Router();
 
 import * as ownerController from "../controllers/ownerController.js";
 
-ownerRouter.post("/login", ownerController.login);
+ownerRouter.post("/analytics-page", ownerController.login);
 
 export default ownerRouter;
