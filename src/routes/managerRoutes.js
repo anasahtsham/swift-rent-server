@@ -1,7 +1,6 @@
 import express from "express";
 const managerRouter = express.Router();
 
-import * as managerController from "../controllers/managerController.js";
+import * as managerController from "../controllers/managerController/managerController.js";
 
-managerRouter.post("/login", managerController.login);
 export default managerRouter;

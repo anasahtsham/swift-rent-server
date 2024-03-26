@@ -14,7 +14,6 @@ export const registerAccount = async (req, res) => {
       phone,
       userPassword: userPassword,
     } = req.body;
-    console.log(req.body);
 
     // Check if all required fields are provided
     if (
