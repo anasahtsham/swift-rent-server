@@ -208,3 +208,37 @@ export const addProperty = async (req, res) => {
     });
   }
 };
+
+//API 3: Fetch Property List for Owner
+export const fetchPropertyList = async (req, res) => {
+  try {
+    const { userID } = req.body;
+
+    if (!userID) {
+      return res.status(400).json({ error: "UserID is required." });
+    }
+
+    // Fetch properties registered to the user
+    const propertyQuery = `
+          SELECT 
+            CONCAT(p.building, ', ', p.street, ', ', a.areaName, ', ', c.cityName) AS address, 
+            t.firstName AS tenantName, 
+            m.firstName AS managerName, 
+            p.propertyStatus 
+          FROM Property p
+          JOIN Area a ON p.areaID = a.id
+          JOIN City c ON a.cityID = c.id
+          LEFT JOIN UserInformation t ON p.tenantID = t.id
+          LEFT JOIN UserInformation m ON p.managerID = m.id
+          WHERE p.ownerID = $1
+        `;
+    const propertiesResult = await db.query(propertyQuery, [userID]);
+    const properties = propertiesResult.rows;
+
+    // Send response
+    res.status(200).json(properties);
+  } catch (error) {
+    console.error("Error in fetching property list:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};

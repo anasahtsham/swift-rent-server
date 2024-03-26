@@ -5,5 +5,6 @@ import * as ownerController from "../controllers/ownerController/ownerPropertyCo
 
 ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
+ownerRouter.post("/fetch-property-list", ownerController.fetchPropertyList);
 
 export default ownerRouter;
