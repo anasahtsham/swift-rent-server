@@ -62,6 +62,7 @@ export const registerAccount = async (req, res) => {
   }
 };
 
+//API 2: Login
 export const login = async (req, res) => {
   const { emailOrPhone, userPassword } = req.body;
   try {
@@ -88,9 +89,61 @@ export const login = async (req, res) => {
     }
 
     // Return the user ID, userType, and success status
-    return res.status(200).json({ userID: user.id, success: true });
+    return res.status(200).json({
+      userID: user.id,
+      isOwner: user.isowner,
+      isManager: user.ismanager,
+      isTenant: user.istenant,
+      success: true,
+    });
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+//API 3: Register Alternate Role
+export const registerAlternateRole = async (req, res) => {
+  try {
+    const { userID, userType } = req.body;
+    if (!userID || !userType) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
+    //Check if the spelling of the userType is correct
+    if (!["manager", "owner", "tenant"].includes(userType)) {
+      return res.status(400).json({ error: "Invalid user type." });
+    }
+
+    //Check if the user already has the role
+    const query = `
+      SELECT * FROM UserInformation
+      WHERE id = $1 AND is${
+        userType.charAt(0).toUpperCase() + userType.slice(1)
+      } = true
+    `;
+    const { rows } = await db.query(query, [userID]);
+    if (rows.length > 0) {
+      return res.status(400).json({ error: "User already has this role." });
+    }
+
+    //Register the user with the new role, but keep the previous roles
+    const updateQuery = await db.query(
+      `
+      UPDATE UserInformation
+      SET is${userType} = true
+      WHERE id = $1
+    `,
+      [userID]
+    );
+    //Check if the update was successful
+    if (updateQuery.rowCount === 0) {
+      return res.status(500).json({ error: "Failed to register role." });
+    }
+
+    //Return success status
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in registering different role:", error);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };
