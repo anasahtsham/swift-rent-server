@@ -2,6 +2,7 @@ import db from "../config/config.js";
 import { getCurrentMonthName } from "../helpers/index.js";
 import { md5 } from "js-md5";
 
+//API 1: Register Account
 export const registerAccount = async (req, res) => {
   try {
     const {
@@ -62,12 +63,34 @@ export const registerAccount = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  //Inputs
-  const { userName, password } = req.body;
-  if (userName === "admin" && password === "unpredictable69") {
-    console.log("auth login");
-    return res.status(200).json({ success: true });
-  } else {
-    return res.status(400).json({ error: "Incorrect Credentials" });
+  const { emailOrPhone, userPassword } = req.body;
+  try {
+    // Check if all required fields are provided
+    if (!emailOrPhone || !userPassword) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
+
+    // Check if the email or number exists in the User table
+    const userQuery = await db.query(
+      "SELECT * FROM UserInformation WHERE email = $1 OR phone = $1",
+      [emailOrPhone]
+    );
+    if (userQuery.rows.length === 0) {
+      // User not found
+      return res.status(401).json({ error: "Email or Phone incorrect!" });
+    }
+
+    const user = userQuery.rows[0];
+
+    // Check if the provided password matches the stored password
+    if (user.userpassword !== userPassword) {
+      return res.status(401).json({ error: "Password does not match!" });
+    }
+
+    // Return the user ID, userType, and success status
+    return res.status(200).json({ userID: user.id, success: true });
+  } catch (error) {
+    console.error("Error during login:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
