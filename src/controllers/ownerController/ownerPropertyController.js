@@ -255,18 +255,20 @@ export const fetchPropertyList = async (req, res) => {
 
     // Fetch properties registered to the user
     const propertyQuery = `
-          SELECT 
-            CONCAT(p.building, ', ', p.street, ', ', a.areaName, ', ', c.cityName) AS address, 
-            t.firstName AS tenantName, 
-            m.firstName AS managerName, 
-            p.propertyStatus 
-          FROM Property p
-          JOIN Area a ON p.areaID = a.id
-          JOIN City c ON a.cityID = c.id
-          LEFT JOIN UserInformation t ON p.tenantID = t.id
-          LEFT JOIN UserInformation m ON p.managerID = m.id
-          WHERE p.ownerID = $1
-        `;
+      SELECT 
+        CONCAT(
+          'Unit ', p.building, ', St.', p.street, ', ', a.areaName, ', ', c.cityName
+        ) AS address, 
+        t.firstName AS tenantName, 
+        m.firstName AS managerName, 
+        p.propertyStatus 
+      FROM Property p
+      JOIN Area a ON p.areaID = a.id
+      JOIN City c ON a.cityID = c.id
+      LEFT JOIN UserInformation t ON p.tenantID = t.id
+      LEFT JOIN UserInformation m ON p.managerID = m.id
+      WHERE p.ownerID = $1
+    `;
     const propertiesResult = await db.query(propertyQuery, [userID]);
     const properties = propertiesResult.rows;
 
