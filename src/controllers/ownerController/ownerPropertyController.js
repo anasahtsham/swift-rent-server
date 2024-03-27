@@ -119,7 +119,7 @@ export const addProperty = async (req, res) => {
       personCapacity,
       hasDayCare,
       hasGarden,
-      hasElectiricity,
+      hasElectricity,
       hasGas,
       hasLift,
       hasPrayerRoom,
@@ -154,7 +154,7 @@ export const addProperty = async (req, res) => {
               personCapacity,
               hasDayCare,
               hasGarden,
-              hasElectiricity,
+              hasElectricity,
               hasGas,
               hasLift,
               hasPrayerRoom,
@@ -188,7 +188,7 @@ export const addProperty = async (req, res) => {
       personCapacity,
       hasDayCare,
       hasGarden,
-      hasElectiricity,
+      hasElectricity,
       hasGas,
       hasLift,
       hasPrayerRoom,
@@ -279,3 +279,5 @@ export const fetchPropertyList = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
+//API 4: Fetch Property Details
