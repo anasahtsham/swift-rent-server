@@ -1,22 +1,50 @@
 import db from "../../config/config.js";
-import { getCurrentMonthName } from "../../helpers/index.js";
-import { md5 } from "js-md5";
 
 //API 1: Fetch Property Data
 export const fetchPropertyData = async (req, res) => {
   try {
+    // Function to determine the parent of an area
+    const getParent = (label, areas) => {
+      const splitLabel = label.split("/");
+      if (splitLabel.length > 1) {
+        const parentLabel = splitLabel[0];
+        const parentArea = areas.find((area) => area.label === parentLabel);
+        return parentArea ? parentArea.value : null;
+      }
+
+      const markazIndex = label.indexOf(" Markaz");
+      if (markazIndex !== -1) {
+        const parentLabel = label.substring(0, markazIndex);
+        const parentArea = areas.find((area) => area.label === parentLabel);
+        return parentArea ? parentArea.value : null;
+      }
+
+      return null;
+    };
+
     // Fetch data from City table
     const cityQuery = "SELECT id, cityName FROM City";
     const citiesResult = await db.query(cityQuery);
     const cities = citiesResult.rows;
-    console.log(cities);
 
     // Fetch data from Area table and sort by areaName
     const areaQuery = `SELECT id, areaName, cityID
-    FROM Area
-    ORDER BY cityID ASC, areaName ASC;`;
+FROM Area
+ORDER BY cityID ASC, areaName ASC;`;
     const areasResult = await db.query(areaQuery);
-    const areas = areasResult.rows;
+
+    // Create an array of areas without the parent property
+    const areasWithoutParent = areasResult.rows.map((area) => ({
+      value: area.id,
+      label: area.areaname,
+      cityID: area.cityid,
+    }));
+
+    // Create the final areas array with the parent property
+    const areas = areasWithoutParent.map((area) => ({
+      ...area,
+      parent: getParent(area.label, areasWithoutParent),
+    }));
 
     // Fetch data from PropertyType table
     const propertyTypeQuery = "SELECT id, propertyType FROM PropertyType";
@@ -27,25 +55,32 @@ export const fetchPropertyData = async (req, res) => {
     const propertySubTypeQuery =
       "SELECT id, propertySubType, propertyTypeID FROM PropertySubType";
     const propertySubTypesResult = await db.query(propertySubTypeQuery);
-    const propertySubTypes = propertySubTypesResult.rows;
+
+    // Group propertySubTypes by propertyTypeID
+    const propertySubTypes = propertySubTypesResult.rows.reduce(
+      (acc, propertySubType) => {
+        const key = propertySubType.propertytypeid;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push({
+          value: propertySubType.id,
+          label: propertySubType.propertysubtype,
+        });
+        return acc;
+      },
+      {}
+    );
 
     // Construct response object with names and IDs
     const responseData = {
-      cities: cities.map((city) => ({ id: city.id, name: city.cityname })),
-      areas: areas.map((area) => ({
-        id: area.id,
-        name: area.areaname,
-        cityID: area.cityid,
-      })),
+      cities: cities.map((city) => ({ value: city.id, label: city.cityname })),
+      areas: areas,
       propertyTypes: propertyTypes.map((propertyType) => ({
-        id: propertyType.id,
-        name: propertyType.propertytype,
+        value: propertyType.id,
+        label: propertyType.propertytype,
       })),
-      propertySubTypes: propertySubTypes.map((propertySubType) => ({
-        id: propertySubType.id,
-        name: propertySubType.propertysubtype,
-        propertyTypeID: propertySubType.propertytypeid,
-      })),
+      propertySubTypes: propertySubTypes,
     };
 
     // Send response
