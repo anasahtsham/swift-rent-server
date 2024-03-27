@@ -10,5 +10,6 @@ authRouter.post(
   authController.registerAlternateRole
 );
 authRouter.post("/verify-credentials", authController.verifyCredentials);
+authRouter.post("/change-password", authController.changePassword);
 
 export default authRouter;

@@ -177,3 +177,41 @@ export const verifyCredentials = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+//Auth API 5: Change Password: grab old password, new password, and user ID
+export const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, userID } = req.body;
+
+    //Check if the old password matches the stored password
+    const query = `
+      SELECT * FROM UserInformation
+      WHERE id = $1 AND userPassword = $2
+    `;
+    const { rows } = await db.query(query, [userID, oldPassword]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: "Old password incorrect." });
+    }
+
+    //Update the password
+    const updateQuery = await db.query(
+      `
+      UPDATE UserInformation
+      SET userPassword = $1
+      WHERE id = $2
+    `,
+      [newPassword, userID]
+    );
+
+    //Check if the update was successful
+    if (updateQuery.rowCount === 0) {
+      return res.status(500).json({ error: "Failed to change password." });
+    }
+
+    //Return success status
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in changing password:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
