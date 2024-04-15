@@ -268,6 +268,7 @@ export const fetchPropertyList = async (req, res) => {
       LEFT JOIN UserInformation t ON p.tenantID = t.id
       LEFT JOIN UserInformation m ON p.managerID = m.id
       WHERE p.ownerID = $1
+      ORDER BY p.id DESC
     `;
     const propertiesResult = await db.query(propertyQuery, [userID]);
     const properties = propertiesResult.rows;
