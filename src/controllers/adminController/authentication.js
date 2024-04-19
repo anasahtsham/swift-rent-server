@@ -1,6 +1,4 @@
 import db from "../../config/config.js";
-import { getCurrentMonthName } from "../../helpers/index.js";
-import { md5 } from "js-md5";
 
 //API 1: Admin Login
 export const login = async (req, res) => {
