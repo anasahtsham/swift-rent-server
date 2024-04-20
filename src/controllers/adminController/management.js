@@ -33,6 +33,15 @@ export const deleteCity = async (req, res) => {
     if (city.rows.length === 0) {
       return res.status(400).json({ error: "City does not exist" });
     }
+    //Check if aras exist in the city
+    const area = await db.query("SELECT * FROM area WHERE cityID = $1", [
+      cityID,
+    ]);
+    if (area.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Areas exist in the city, cannot delete" });
+    }
     await db.query("DELETE FROM city WHERE id = $1", [cityID]);
     return res.status(200).json({ message: "City Deleted" });
   } catch (error) {
