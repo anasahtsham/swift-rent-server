@@ -30,7 +30,7 @@ export const fetchPropertyData = async (req, res) => {
     // Fetch data from Area table and sort by areaName
     const areaQuery = `SELECT id, areaName, cityID
                       FROM Area
-                      ORDER BY id ASC;`;
+                      ORDER BY areaName`;
     const areasResult = await db.query(areaQuery);
 
     // Create an array of areas without the parent property

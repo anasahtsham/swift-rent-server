@@ -3,7 +3,8 @@ import db from "../../config/config.js";
 //API 1: City List
 export const cityList = async (req, res) => {
   try {
-    const cityList = await db.query("SELECT * FROM city");
+    //Get city list ordered by id
+    const cityList = await db.query("SELECT * FROM city ORDER BY id");
     return res.status(200).json(cityList.rows);
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -73,9 +74,11 @@ export const areaList = async (req, res) => {
     if (city.rows.length === 0) {
       return res.status(400).json({ error: "City does not exist" });
     }
-    const areaList = await db.query("SELECT * FROM area WHERE cityID = $1", [
-      cityID,
-    ]);
+    //Get area list for the city sorted alphabetically
+    const areaList = await db.query(
+      "SELECT * FROM area WHERE cityID = $1 ORDER BY areaName",
+      [cityID]
+    );
     return res.status(200).json(areaList.rows);
   } catch (error) {
     return res.status(400).json({ error: error.message });
