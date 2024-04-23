@@ -13,7 +13,9 @@ const db = new pg.Client({
 });
 
 db.connect()
-  .then(() => console.log("Connected to the database"))
-  .catch((err) => console.error("Error connecting to the database", err.stack));
+  .then(() => console.log("Connected to the database 'swiftrent'"))
+  .catch((err) =>
+    console.error("Error connecting to the database 'swiftrent'", err.stack)
+  );
 
 export default db;
