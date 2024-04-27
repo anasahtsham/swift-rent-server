@@ -1,19 +1,15 @@
 import db from "../config/config.js";
 import { getCurrentMonthName } from "../helpers/index.js";
 import { md5 } from "js-md5";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 //Auth API 1: Register Account
 export const registerAccount = async (req, res) => {
   try {
-    const {
-      userType,
-      firstName,
-      lastName,
-      DOB,
-      email,
-      phone,
-      userPassword: userPassword,
-    } = req.body;
+    const { userType, firstName, lastName, DOB, email, phone, userPassword } =
+      req.body;
 
     // Check if all required fields are provided
     if (
@@ -28,6 +24,15 @@ export const registerAccount = async (req, res) => {
       return res.status(400).json({ error: "All fields are required." });
     }
 
+    //Apply MD5 hashing to the password + salt
+    var hashedPassword = userPassword + process.env.SALT;
+    console.log("before salting: " + hashedPassword);
+    //Apply 10 salting rounds using md5
+    for (let i = 0; i < 10; i++) {
+      hashedPassword = md5(hashedPassword);
+    }
+    console.log("after salting: " + hashedPassword);
+
     // Insert the new user information into the database
     const query = `
       INSERT INTO UserInformation 
@@ -41,7 +46,7 @@ export const registerAccount = async (req, res) => {
       DOB,
       phone,
       email,
-      userPassword,
+      hashedPassword,
       userType === "manager",
       userType === "owner",
       userType === "tenant",
@@ -82,8 +87,17 @@ export const login = async (req, res) => {
 
     const user = userQuery.rows[0];
 
+    //Apply MD5 hashing to the password + salt
+    var hashedPassword = userPassword + process.env.SALT;
+    console.log("before salting: " + hashedPassword);
+    //Apply 10 salting rounds using md5
+    for (let i = 0; i < 10; i++) {
+      hashedPassword = md5(hashedPassword);
+    }
+    console.log("after salting: " + hashedPassword);
+
     // Check if the provided password matches the stored password
-    if (user.userpassword !== userPassword) {
+    if (user.userpassword !== hashedPassword) {
       return res.status(401).json({ error: "Password does not match!" });
     }
 
