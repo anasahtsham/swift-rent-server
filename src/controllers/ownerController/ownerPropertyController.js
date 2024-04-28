@@ -99,8 +99,7 @@ export const addProperty = async (req, res) => {
       userID,
       areaID,
       propertySubTypeID,
-      street,
-      building,
+      propertyAddress,
       // Extract property amenity data list fields
       areaSqft,
       height,
@@ -216,8 +215,7 @@ export const addProperty = async (req, res) => {
               ownerID,
               areaID,
               propertySubTypeID,
-              street,
-              building,
+              propertyAddress,
               propertyAmenityID,
               propertyStatus
             ) VALUES ($1, $2, $3, $4, $5, $6, 'V');
@@ -226,8 +224,7 @@ export const addProperty = async (req, res) => {
       userID,
       areaID,
       propertySubTypeID,
-      street,
-      building,
+      propertyAddress,
       propertyAmenityID,
     ];
     await db.query(propertyQuery, propertyValues);
@@ -257,7 +254,7 @@ export const fetchPropertyList = async (req, res) => {
     const propertyQuery = `
       SELECT 
         CONCAT(
-          'Unit ', p.building, ', St.', p.street, ', ', a.areaName, ', ', c.cityName
+          p.propertyAddress, ', ', a.areaName, ', ', c.cityName
         ) AS address, 
         t.firstName AS tenantName, 
         m.firstName AS managerName, 
