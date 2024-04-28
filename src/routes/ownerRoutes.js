@@ -7,4 +7,6 @@ ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
 ownerRouter.post("/fetch-property-list", ownerController.fetchPropertyList);
 
+//Total ownerRouter routes: 3
+
 export default ownerRouter;

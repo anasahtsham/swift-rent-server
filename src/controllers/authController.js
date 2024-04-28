@@ -1,5 +1,4 @@
 import db from "../config/config.js";
-import { getCurrentMonthName } from "../helpers/index.js";
 import { md5 } from "js-md5";
 import dotenv from "dotenv";
 
@@ -26,12 +25,10 @@ export const registerAccount = async (req, res) => {
 
     //Apply MD5 hashing to the password + salt
     var hashedPassword = userPassword + process.env.SALT;
-    console.log("before salting: " + hashedPassword);
     //Apply 10 salting rounds using md5
     for (let i = 0; i < 10; i++) {
       hashedPassword = md5(hashedPassword);
     }
-    console.log("after salting: " + hashedPassword);
 
     // Insert the new user information into the database
     const query = `
@@ -89,12 +86,10 @@ export const login = async (req, res) => {
 
     //Apply MD5 hashing to the password + salt
     var hashedPassword = userPassword + process.env.SALT;
-    console.log("before salting: " + hashedPassword);
     //Apply 10 salting rounds using md5
     for (let i = 0; i < 10; i++) {
       hashedPassword = md5(hashedPassword);
     }
-    console.log("after salting: " + hashedPassword);
 
     // Check if the provided password matches the stored password
     if (user.userpassword !== hashedPassword) {
@@ -227,5 +222,43 @@ export const changePassword = async (req, res) => {
   } catch (error) {
     console.error("Error in changing password:", error);
     return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+//Auth API 6: Forgot Password
+export const forgotPassword = async (req, res) => {
+  const { emailOrPhone } = req.body;
+
+  try {
+    // Verify the email or phone provided by the user and return userID
+    const user = await db.query(
+      "SELECT id FROM UserInformation WHERE email = $1 OR phone = $1",
+      [emailOrPhone]
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userID = user.rows[0].id;
+
+    // Register a complaint in the admin complaints table
+    await db.query(
+      "INSERT INTO AdminComplaint (senderID, senderType, complaintTitle, complaintDescription, complaintStatus) VALUES ($1, $2, $3, $4, $5)",
+      [
+        userID,
+        `G`,
+        `Password Reset Request`,
+        `UserID:${userID} with email/phone: ${emailOrPhone} needs their password to be reset.`,
+        "P",
+      ]
+    );
+
+    return res
+      .status(200)
+      .json({ success: "Password reset request sent successfully" });
+  } catch (error) {
+    console.error("Error in forgotPassword controller:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

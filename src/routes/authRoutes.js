@@ -11,5 +11,8 @@ authRouter.post(
 );
 authRouter.post("/verify-credentials", authController.verifyCredentials);
 authRouter.post("/change-password", authController.changePassword);
+authRouter.post("/forgot-password", authController.forgotPassword);
+
+//Total authRouter routes: 6
 
 export default authRouter;
