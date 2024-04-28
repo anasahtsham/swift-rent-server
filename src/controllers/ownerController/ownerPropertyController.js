@@ -218,7 +218,7 @@ export const addProperty = async (req, res) => {
               propertyAddress,
               propertyAmenityID,
               propertyStatus
-            ) VALUES ($1, $2, $3, $4, $5, $6, 'V');
+            ) VALUES ($1, $2, $3, $4, $5, 'V');
           `;
     const propertyValues = [
       userID,

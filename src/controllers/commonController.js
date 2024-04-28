@@ -34,3 +34,22 @@ export const getUserProfile = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+//API 2: Customer Support
+export const customerSupport = async (req, res) => {
+  const { senderID, senderType, complaintTitle, complaintDescription } =
+    req.body;
+
+  try {
+    // Insert the input data into the AdminComplaint table
+    await db.query(
+      "INSERT INTO AdminComplaint (senderID, senderType, complaintTitle, complaintDescription, complaintStatus) VALUES ($1, $2, $3, $4, $5)",
+      [senderID, senderType, complaintTitle, complaintDescription, "P"]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
