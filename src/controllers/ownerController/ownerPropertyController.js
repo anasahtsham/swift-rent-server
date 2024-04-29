@@ -278,4 +278,133 @@ export const fetchPropertyList = async (req, res) => {
   }
 };
 
-//API 4: Fetch Property Details
+//API 4: Register Tenant
+export const registerTenant = async (req, res) => {
+  const {
+    propertyID,
+    phone,
+    registeredByID,
+    registeredByType,
+    incrementPercentage,
+    incrementPeriod,
+    rent,
+    securityDeposit,
+    advancePayment,
+    advancePaymentForMonths,
+    dueDate,
+    fine,
+    leasedForMonths,
+  } = req.body;
+
+  try {
+    //make sure that there are no other pending leases or active leases against this propertyID in the database.
+    const leaseQuery = await db.query(
+      `SELECT leaseStatus FROM PropertyLease WHERE propertyID = $1`,
+      [propertyID]
+    );
+    //Check if lease status is P = Pending or A = Active
+    if (leaseQuery.rows.length > 0) {
+      if (leaseQuery.rows[0].leasestatus === "P") {
+        return res.status(400).json({
+          error: "There is already a pending lease agreement for this property",
+        });
+      } else if (leaseQuery.rows[0].leasestatus === "A") {
+        return res.status(400).json({
+          error: "There is already an active lease agreement for this property",
+        });
+      }
+    }
+
+    // Check if there is a manager registered to the property
+    const propertyQuery = await db.query(
+      `SELECT 
+        CONCAT(
+          p.propertyAddress, ', ', a.areaName, ', ', c.cityName
+        ) AS address, 
+        p.managerID AS managerID
+      FROM Property p
+      JOIN Area a ON p.areaID = a.id
+      JOIN City c ON a.cityID = c.id
+      WHERE p.id = $1`,
+      [propertyID]
+    );
+
+    if (propertyQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Property not found" });
+    }
+
+    const { managerid, address } = propertyQuery.rows[0];
+
+    // Set managerID in the property lease table if a manager is registered
+    const registeredManagerID = managerid ? managerid : null;
+
+    // Find the tenantID using the provided phone number
+    const tenantQuery = await db.query(
+      "SELECT id FROM UserInformation WHERE phone = $1",
+      [phone]
+    );
+
+    if (tenantQuery.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Tenant not found, Please check the number!" });
+    }
+
+    const tenantID = tenantQuery.rows[0].id;
+
+    // Set lease status to 'P'
+    const leaseStatus = "P";
+
+    // Insert data into the property lease table
+    await db.query(
+      `INSERT INTO PropertyLease (
+        propertyID, tenantID, registeredByType, registeredByID, managerID, leaseStatus,
+        incrementPercentage, incrementPeriod, rent, securityDeposit, advancePayment,
+        advancePaymentForMonths, dueDate, fine, leasedForMonths
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      [
+        propertyID,
+        tenantID,
+        registeredByType,
+        registeredByID,
+        registeredManagerID,
+        leaseStatus,
+        incrementPercentage,
+        incrementPeriod,
+        rent,
+        securityDeposit,
+        advancePayment,
+        advancePaymentForMonths,
+        dueDate,
+        fine,
+        leasedForMonths,
+      ]
+    );
+
+    // Get the name of the registrar from UserInformation table
+    const registrarQuery = await db.query(
+      "SELECT firstName, lastName FROM UserInformation WHERE id = $1",
+      [registeredByID]
+    );
+
+    const registrar =
+      registrarQuery.rows[0].firstname + " " + registrarQuery.rows[0].lastname;
+
+    const notificationText = `${registrar} (${
+      registeredByType === "O" ? "Owner" : "Manager"
+    }) wants you to approve lease agreement for: ${address}`;
+
+    // Create a notification for the tenant and also check if it was successfully created
+    await db.query(
+      `INSERT INTO UserNotification (
+        userID, userType, senderID, senderType, notificationText
+      ) VALUES ($1, 'T', $2, $3, $4)`,
+      [tenantID, registeredByID, registeredByType, notificationText]
+    );
+
+    res.status(200).json({ success: "Tenant registered successfully" });
+  } catch (error) {
+    console.error("Error registering tenant:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
