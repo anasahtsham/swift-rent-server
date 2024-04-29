@@ -54,31 +54,39 @@ export const customerSupport = async (req, res) => {
   }
 };
 
+//API 3: User Notifications
 export const getUserNotifications = async (req, res) => {
-  const { userID, userType } = req.body;
-
   try {
-    // Find out all the notifications where the receiver id matches up with the provided userID and userType
-    const notifications = await db.query(
-      `SELECT 
-        notificationText, 
-        notificationType, 
-        sentOn 
-        FROM UserNotification 
-        WHERE userID = $1 
-        AND userType = $2 ORDER BY sentOn DESC`,
-      [userID, userType]
-    );
+    const { userID, userType } = req.body;
 
-    // If no notifications are found, return an empty array
-    if (notifications.rows.length === 0) {
-      return res.status(200).json({ notifications: [] });
+    // Query to retrieve user notifications
+    const notificationsQuery = `
+      SELECT UN.id, 
+             TO_CHAR(UN.sentOn, 'MM/DD/YYYY') AS dateAndYear, 
+             TO_CHAR(UN.sentOn, 'HH24:MI') AS time, 
+             CONCAT(UI.firstName, ' ', UI.lastName) AS senderName, 
+             UN.senderType, 
+             UN.notificationText, 
+             UN.notificationType
+      FROM UserNotification UN
+      JOIN UserInformation UI ON UN.senderID = UI.id
+      WHERE UN.userID = $1 AND UN.userType = $2
+      ORDER BY UN.sentOn DESC;
+    `;
+
+    const { rows } = await db.query(notificationsQuery, [userID, userType]);
+
+    // Check if there are no notifications for the user
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No notifications found for the user" });
     }
 
-    // Send the notifications to the client
-    res.status(200).json({ notifications: notifications.rows });
+    // Send notifications as JSON
+    res.status(200).json({ notifications: rows });
   } catch (error) {
-    console.error("Error fetching user notifications:", error);
-    res.status(500).json({ error: "Failed to fetch user notifications" });
+    console.error("Error retrieving notifications:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
