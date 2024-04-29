@@ -262,3 +262,30 @@ export const forgotPassword = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+//Auth API 7: Switch Role, take userID and return the type of user
+export const switchRole = async (req, res) => {
+  const { userID } = req.body;
+  try {
+    // Get the user information
+    const user = await db.query(
+      "SELECT isOwner, isManager, isTenant FROM UserInformation WHERE id = $1",
+      [userID]
+    );
+
+    // Check if the user exists
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Return all the user types
+    return res.status(200).json({
+      isOwner: user.rows[0].isowner,
+      isManager: user.rows[0].ismanager,
+      isTenant: user.rows[0].istenant,
+    });
+  } catch (error) {
+    console.error("Error in switchRole controller:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
