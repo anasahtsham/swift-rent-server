@@ -53,3 +53,26 @@ export const customerSupport = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+//API 3: User Notifications
+export const getUserNotifications = async (req, res) => {
+  const { userID, userType } = req.body;
+
+  try {
+    // Find out all the notifications where the receiver id matches up with the provided userID and userType
+    const notifications = await db.query(
+      "SELECT * FROM UserNotification WHERE userID = $1 AND userType = $2 ORDER BY sentOn DESC",
+      [userID, userType]
+    );
+
+    // If no notifications are found, return an empty array
+    if (notifications.rows.length === 0) {
+      return res.status(200).json({ notifications: [] });
+    }
+
+    return res.status(200).json({ notifications: notifications.rows });
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    res.status(500).json({ error: "Failed to fetch user notifications" });
+  }
+};

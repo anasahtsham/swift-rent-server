@@ -5,7 +5,11 @@ import * as commonController from "../controllers/commonController.js";
 
 commonRouter.post("/get-user-profile-info", commonController.getUserProfile);
 commonRouter.post("/customer-support", commonController.customerSupport);
+commonRouter.post(
+  "/get-user-notifications",
+  commonController.getUserNotifications
+);
 
-//Total commonRouter routes: 2
+//Total commonRouter routes: 3
 
 export default commonRouter;
