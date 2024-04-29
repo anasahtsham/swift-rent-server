@@ -398,9 +398,7 @@ export const registerTenant = async (req, res) => {
     const registrar =
       registrarQuery.rows[0].firstname + " " + registrarQuery.rows[0].lastname;
 
-    const notificationText = `${registrar} (${
-      registeredByType === "O" ? "Owner" : "Manager"
-    }) wants you to approve lease agreement for: ${address}`;
+    const notificationText = `Approve lease agreement for: ${address}`;
 
     // Create a notification for the tenant and also check if it was successfully created
     await db.query(
