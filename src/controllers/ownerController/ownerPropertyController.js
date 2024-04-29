@@ -321,7 +321,8 @@ export const registerTenant = async (req, res) => {
         CONCAT(
           p.propertyAddress, ', ', a.areaName, ', ', c.cityName
         ) AS address, 
-        p.managerID AS managerID
+        p.managerID AS managerID,
+        p.ownerID AS ownerID
       FROM Property p
       JOIN Area a ON p.areaID = a.id
       JOIN City c ON a.cityID = c.id
@@ -333,7 +334,7 @@ export const registerTenant = async (req, res) => {
       return res.status(404).json({ error: "Property not found" });
     }
 
-    const { managerid, address } = propertyQuery.rows[0];
+    const { managerid, address, ownerid } = propertyQuery.rows[0];
 
     // Set managerID in the property lease table if a manager is registered
     const registeredManagerID = managerid ? managerid : null;
@@ -351,6 +352,13 @@ export const registerTenant = async (req, res) => {
     }
 
     const tenantID = tenantQuery.rows[0].id;
+
+    //TeanatID cannot be same as ownerID
+    if (tenantID === ownerid) {
+      return res.status(400).json({
+        error: "Owner cannot register himself as a tenant on his own property!",
+      });
+    }
 
     // Set lease status to 'P'
     const leaseStatus = "P";
@@ -397,8 +405,8 @@ export const registerTenant = async (req, res) => {
     // Create a notification for the tenant and also check if it was successfully created
     await db.query(
       `INSERT INTO UserNotification (
-        userID, userType, senderID, senderType, notificationText
-      ) VALUES ($1, 'T', $2, $3, $4)`,
+        userID, userType, senderID, senderType, notificationText, notificationType
+      ) VALUES ($1, 'T', $2, $3, $4, 'L')`,
       [tenantID, registeredByID, registeredByType, notificationText]
     );
 
