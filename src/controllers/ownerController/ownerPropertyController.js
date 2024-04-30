@@ -299,10 +299,11 @@ export const registerTenant = async (req, res) => {
   try {
     //make sure that there are no other pending leases or active leases against this propertyID in the database.
     const leaseQuery = await db.query(
-      `SELECT leaseStatus FROM PropertyLease WHERE propertyID = $1`,
+      `SELECT leaseStatus FROM PropertyLease WHERE propertyID = $1 ORDER BY id DESC`,
       [propertyID]
     );
     //Check if lease status is P = Pending or A = Active
+    console.log(leaseQuery.rows[0].leasestatus);
     if (leaseQuery.rows.length > 0) {
       if (leaseQuery.rows[0].leasestatus === "P") {
         return res.status(400).json({
@@ -408,7 +409,7 @@ export const registerTenant = async (req, res) => {
       [tenantID, registeredByID, registeredByType, notificationText]
     );
 
-    res.status(200).json({ success: "Tenant registered successfully" });
+    res.status(200).json({ success: "Request sent to tenant successfully" });
   } catch (error) {
     console.error("Error registering tenant:", error.message);
     res.status(500).json({ error: "Internal server error" });
