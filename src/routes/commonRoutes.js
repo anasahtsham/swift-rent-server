@@ -9,6 +9,10 @@ commonRouter.post(
   "/get-user-notifications",
   commonController.getUserNotifications
 );
+commonRouter.post(
+  "/customer-support-status",
+  commonController.CustomerSupportStatus
+);
 
 //Total commonRouter routes: 3
 

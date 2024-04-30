@@ -18,6 +18,9 @@ adminRouter.post("/delete-area", areaManagement.deleteArea);
 adminRouter.post("/update-area", areaManagement.updateArea);
 //Compaint Management
 adminRouter.get("/complaint-list", complaintManagement.getAdminComplaints);
+adminRouter.post("/set-in-progress", complaintManagement.setStatusInProgress);
+adminRouter.post("/set-solved", complaintManagement.setStatusSolved);
+adminRouter.post("/reject-complaint", complaintManagement.rejectComplaint);
 
 //Total adminRouter routes: 10
 
