@@ -253,12 +253,13 @@ export const fetchPropertyList = async (req, res) => {
     // Fetch properties registered to the user
     const propertyQuery = `
       SELECT 
+        p.id,
         CONCAT(
           p.propertyAddress, ', ', a.areaName, ', ', c.cityName
         ) AS address, 
         t.firstName AS tenantName, 
         m.firstName AS managerName, 
-        p.propertyStatus 
+        p.propertyStatus
       FROM Property p
       JOIN Area a ON p.areaID = a.id
       JOIN City c ON a.cityID = c.id
@@ -303,7 +304,6 @@ export const registerTenant = async (req, res) => {
       [propertyID]
     );
     //Check if lease status is P = Pending or A = Active
-    console.log(leaseQuery.rows[0].leasestatus);
     if (leaseQuery.rows.length > 0) {
       if (leaseQuery.rows[0].leasestatus === "P") {
         return res.status(400).json({
