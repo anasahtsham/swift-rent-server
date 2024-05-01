@@ -1,6 +1,7 @@
 import db from "../config/config.js";
 import { md5 } from "js-md5";
 import dotenv from "dotenv";
+import { hashPassword } from "../helpers/encryption.js";
 
 dotenv.config();
 
@@ -23,12 +24,8 @@ export const registerAccount = async (req, res) => {
       return res.status(400).json({ error: "All fields are required." });
     }
 
-    //Apply MD5 hashing to the password + salt
-    var hashedPassword = userPassword + process.env.SALT;
-    //Apply 10 salting rounds using md5
-    for (let i = 0; i < 10; i++) {
-      hashedPassword = md5(hashedPassword);
-    }
+    // Apply MD5 hashing to the password + salt
+    var hashedPassword = hashPassword(userPassword);
 
     // Insert the new user information into the database
     const query = `
@@ -84,12 +81,8 @@ export const login = async (req, res) => {
 
     const user = userQuery.rows[0];
 
-    //Apply MD5 hashing to the password + salt
-    var hashedPassword = userPassword + process.env.SALT;
-    //Apply 10 salting rounds using md5
-    for (let i = 0; i < 10; i++) {
-      hashedPassword = md5(hashedPassword);
-    }
+    // Apply MD5 hashing to the password + salt
+    var hashedPassword = hashPassword(userPassword);
 
     // Check if the provided password matches the stored password
     if (user.userpassword !== hashedPassword) {
@@ -190,7 +183,11 @@ export const verifyCredentials = async (req, res) => {
 //Auth API 5: Change Password: grab old password, new password, and user ID
 export const changePassword = async (req, res) => {
   try {
-    const { oldPassword, newPassword, userID } = req.body;
+    var { oldPassword, newPassword, userID } = req.body;
+
+    // Apply MD5 hashing to the password + salt
+    oldPassword = hashPassword(oldPassword);
+    newPassword = hashPassword(newPassword);
 
     //Check if the old password matches the stored password
     const query = `

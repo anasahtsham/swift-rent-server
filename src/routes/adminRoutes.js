@@ -4,6 +4,7 @@ const adminRouter = express.Router();
 import * as authentication from "../controllers/adminController/authentication.js";
 import * as areaManagement from "../controllers/adminController/areaManagement.js";
 import * as complaintManagement from "../controllers/adminController/complaintManagement.js";
+import * as userManagement from "../controllers/adminController/userManagement.js";
 
 //Authentication
 adminRouter.post("/login", authentication.login);
@@ -21,6 +22,12 @@ adminRouter.get("/complaint-list", complaintManagement.getAdminComplaints);
 adminRouter.post("/set-in-progress", complaintManagement.setStatusInProgress);
 adminRouter.post("/set-solved", complaintManagement.setStatusSolved);
 adminRouter.post("/reject-complaint", complaintManagement.rejectComplaint);
+//User Management
+adminRouter.get("/user-list", userManagement.userList);
+adminRouter.post("/edit-user", userManagement.editUser);
+adminRouter.post("/ban-user", userManagement.banUser);
+adminRouter.post("/un-ban-user", userManagement.unbanUser);
+adminRouter.post("/reset-password", userManagement.resetPassword);
 
 //Total adminRouter routes: 10
 

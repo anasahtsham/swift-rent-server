@@ -147,11 +147,6 @@ export const leaseReject = async (req, res) => {
 export const acceptLease = async (req, res) => {
   const { leaseID } = req.body;
 
-  // Check if leaseID is empty
-  if (!leaseID || leaseID.trim().length === 0) {
-    return res.status(400).json({ error: "Lease ID is required" });
-  }
-
   try {
     // Check if lease status is pending
     const checkLeaseQuery = `SELECT leaseStatus FROM PropertyLease WHERE id = $1;`;
