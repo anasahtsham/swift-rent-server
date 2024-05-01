@@ -5,6 +5,7 @@ import morgan from "./src/helpers/loggerhelper.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import applyRoutes from "./src/routes/index.js";
+import path from "path";
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,13 @@ app.use(
 
 // Apply routes
 applyRoutes(app);
+
+// Send the ../public folder
+app.use(
+  express.static(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "public")
+  )
+);
 
 // Start the server
 app.listen(port, () => {
