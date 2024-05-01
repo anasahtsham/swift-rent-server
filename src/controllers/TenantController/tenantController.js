@@ -142,3 +142,215 @@ export const leaseReject = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+//API 4: Accept Lease
+export const acceptLease = async (req, res) => {
+  const { leaseID } = req.body;
+
+  // Check if leaseID is empty
+  if (!leaseID || leaseID.trim().length === 0) {
+    return res.status(400).json({ error: "Lease ID is required" });
+  }
+
+  try {
+    // Check if lease status is pending
+    const checkLeaseQuery = `SELECT leaseStatus FROM PropertyLease WHERE id = $1;`;
+    const { rowCount, rows: checkLeaseRows } = await db.query(checkLeaseQuery, [
+      leaseID,
+    ]);
+
+    if (rowCount === 0) {
+      return res.status(400).json({ error: "Lease does not exist" });
+    }
+
+    if (checkLeaseRows[0].leasestatus !== "P") {
+      return res.status(400).json({
+        error: "Lease cannot be accepted as it is not in pending status",
+      });
+    }
+
+    // Get lease information
+    const getLeaseQuery = `
+      SELECT
+        pl.propertyID,
+        pl.tenantID,
+        pl.managerID,
+        pl.rent,
+        pl.dueDate,
+        pl.fine,
+        pl.advancePayment,
+        pl.registeredByID,
+        pl.registeredByType
+      FROM PropertyLease pl
+      WHERE pl.id = $1;
+    `;
+    const { rows } = await db.query(getLeaseQuery, [leaseID]);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "Lease does not exist" });
+    }
+
+    const {
+      propertyid,
+      tenantid,
+      managerid,
+      rent,
+      duedate,
+      fine,
+      advancepayment,
+      registeredbyid,
+      registeredbytype,
+    } = rows[0];
+
+    // Convert rent, advancepayment and fine to integer
+    const formattedAdvancePayment = parseFloat(
+      advancepayment.replace(/[^0-9.-]+/g, "")
+    );
+    const advancePaymentInt = Math.round(formattedAdvancePayment);
+    const formattedRent = parseFloat(rent.replace(/[^0-9.-]+/g, ""));
+    const rentInt = Math.round(formattedRent);
+    const formattedFine = parseFloat(fine.replace(/[^0-9.-]+/g, ""));
+    const fineInt = Math.round(formattedFine);
+
+    // Update property table
+    const updatePropertyQuery = `
+      UPDATE Property
+      SET tenantID = $1, propertyStatus = 'L'
+      WHERE id = $2;
+    `;
+    await db.query(updatePropertyQuery, [tenantid, propertyid]);
+
+    // Update PropertyLease table
+    const updateLeaseQuery = `
+      UPDATE PropertyLease
+      SET leaseStatus = 'A', approvedByTenant = true
+      WHERE id = $1;
+    `;
+    await db.query(updateLeaseQuery, [leaseID]);
+
+    // Calculate rent amount for TenantRentNotice
+    let rentAmount = 0;
+    if (advancePaymentInt === 0) {
+      rentAmount = rentInt;
+    } else {
+      rentAmount = advancePaymentInt;
+    }
+
+    // Insert into TenantRentNotice
+    const insertNoticeQuery = `
+      INSERT INTO TenantRentNotice (propertyID, tenantID, managerID, rentAmount, dueDate, fine, paymentStatus)
+      VALUES ($1, $2, $3, $4, $5, $6, 'P');
+    `;
+    await db.query(insertNoticeQuery, [
+      propertyid,
+      tenantid,
+      managerid,
+      rentAmount,
+      duedate,
+      fineInt,
+    ]);
+
+    // Find out property address CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+    const propertyAddressQuery = `
+      SELECT 
+      CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const { rows: addressRows } = await db.query(propertyAddressQuery, [
+      propertyid,
+    ]);
+    const propertyAddress = addressRows[0].address;
+
+    // Create notification text
+    const notificationTextRegistrar = `Tenant has accepted lease for the property: ${propertyAddress}`;
+
+    // Send notifications
+    const createRegistrarNotificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, $2, $3, $4, $5, 'L');
+    `;
+    // Send notification to registrar
+    await db.query(createRegistrarNotificationQuery, [
+      registeredbyid,
+      registeredbytype,
+      tenantid,
+      "T",
+      notificationTextRegistrar,
+    ]);
+
+    // Send notifications
+    const createTenantNotificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, $2, $3, $4, $5, 'R');
+    `;
+
+    // Create notification text
+    const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress} before ${duedate} to avoid fine of ${fineInt}`;
+
+    // Get ownerID from property table
+    const getOwnerIDQuery = `SELECT ownerID FROM Property WHERE id = $1;`;
+    const { rows: ownerRows } = await db.query(getOwnerIDQuery, [propertyid]);
+    const ownerid = ownerRows[0].ownerid;
+
+    // Send notification to tenant
+    await db.query(createTenantNotificationQuery, [
+      tenantid,
+      "T",
+      ownerid,
+      "O",
+      notificationTextTenant,
+    ]);
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error accepting lease:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+//API 5: List of Rentals
+export const listOfRentals = async (req, res) => {
+  const { tenantID } = req.body;
+
+  try {
+    // Fetch active leases for the given tenantID
+    const activeLeasesQuery = `
+      SELECT pl.propertyID, 
+             CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address, 
+             uo.firstName AS ownerFirstName, 
+             uo.lastName AS ownerLastName,
+             um.firstName AS managerFirstName, 
+             um.lastName AS managerLastName
+      FROM PropertyLease pl
+      INNER JOIN Property P ON pl.propertyID = P.id
+      INNER JOIN Area A ON P.areaID = A.id
+      INNER JOIN City C ON A.cityID = C.id
+      INNER JOIN UserInformation uo ON P.ownerID = uo.id
+      LEFT JOIN UserInformation um ON pl.managerID = um.id
+      WHERE pl.tenantID = $1 AND pl.leaseStatus = 'A';
+    `;
+    const { rows } = await db.query(activeLeasesQuery, [tenantID]);
+
+    if (rows.length === 0) {
+      return res.status(200).json({ message: "No active rentals found" });
+    }
+
+    // Format the response data
+    const rentals = rows.map((row) => ({
+      id: row.propertyid,
+      address: row.address,
+      ownerName: `${row.ownerfirstname} ${row.ownerlastname}`,
+      managerName: row.managerfirstname
+        ? `${row.managerfirstname} ${row.managerlastname}`
+        : null,
+    }));
+
+    res.status(200).json({ rentals });
+  } catch (error) {
+    console.error("Error fetching list of rentals:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

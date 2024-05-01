@@ -9,5 +9,7 @@ tenantRouter.post(
   tenantController.getLeaseRequestDetail
 );
 tenantRouter.post("/lease-reject", tenantController.leaseReject);
+tenantRouter.post("/lease-accept", tenantController.acceptLease);
+tenantRouter.post("/list-of-rentals", tenantController.listOfRentals);
 
 export default tenantRouter;

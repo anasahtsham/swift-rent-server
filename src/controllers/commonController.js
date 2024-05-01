@@ -111,9 +111,15 @@ export const CustomerSupportStatus = async (req, res) => {
 
     // Retrieve customer support requests submitted by the user
     const customerSupportRequestsQuery = `
-      SELECT complaintTitle AS Title, complaintDescription AS Description, complaintStatus AS Status
+      SELECT 
+      complaintTitle AS Title, 
+      complaintDescription AS Description, 
+      complaintStatus AS Status,
+      TO_CHAR(createdOn, 'DD-MM-YYYY HH24:MI:SS') AS createdOn,
+      TO_CHAR(complaintSolvedOn, 'DD-MM-YYYY HH24:MI:SS') AS complaintSolvedOn
       FROM AdminComplaint 
-      WHERE senderID = $1 AND senderType = $2;
+      WHERE senderID = $1 AND senderType = $2
+      ORDER BY id DESC;
     `;
     const { rows: customerSupportRequests } = await db.query(
       customerSupportRequestsQuery,
