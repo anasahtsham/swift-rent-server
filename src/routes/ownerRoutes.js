@@ -2,12 +2,26 @@ import express from "express";
 const ownerRouter = express.Router();
 
 import * as ownerController from "../controllers/ownerController/ownerPropertyController.js";
+import * as maintenanceController from "../controllers/ownerController/maintenaceController.js";
 
 ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
 ownerRouter.post("/fetch-property-list", ownerController.fetchPropertyList);
 ownerRouter.post("/register-tenant", ownerController.registerTenant);
+//Maintenance
+ownerRouter.post(
+  "/generate-maintenance-report",
+  maintenanceController.generateMaintenanceReport
+);
+ownerRouter.post(
+  "/display-maintenance-reports",
+  maintenanceController.displayMaintenanceReport
+);
+ownerRouter.post(
+  "/display-all-maintenace-reports",
+  maintenanceController.displayAllMaintenanceReports
+);
 
-//Total ownerRouter routes: 3
+//Total ownerRouter routes: 7
 
 export default ownerRouter;
