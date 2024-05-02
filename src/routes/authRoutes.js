@@ -13,7 +13,8 @@ authRouter.post("/verify-credentials", authController.verifyCredentials);
 authRouter.post("/change-password", authController.changePassword);
 authRouter.post("/forgot-password", authController.forgotPassword);
 authRouter.post("/switch-role", authController.switchRole);
+authRouter.post("/check-ban", authController.checkBan);
 
-//Total authRouter routes: 7
+//Total authRouter routes: 8
 
 export default authRouter;

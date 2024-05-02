@@ -1052,6 +1052,11 @@ section {
   .hero-section .iphone-wrap .phone-2 {
     display: none;
   }
+  .hero-section,
+  .hero-section > .container > .row {
+    height: 80vh;
+    min-height: 580px;
+  }
 }
 
 /* Media Queries for Mobile */
@@ -1070,5 +1075,10 @@ section {
 
   .hero-section .iphone-wrap .phone-2 {
     display: none;
+  }
+  .hero-section,
+  .hero-section > .container > .row {
+    height: 85vh;
+    min-height: 480px;
   }
 }

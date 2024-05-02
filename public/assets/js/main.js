@@ -6,6 +6,18 @@
  * License: https://bootstrapmade.com/license/
  */
 
+//Code to close the mobile menu when a link is clicked
+document.addEventListener("DOMContentLoaded", function () {
+  var navLinks = document.querySelectorAll("#navbar ul li a");
+
+  navLinks.forEach(function (navLink) {
+    navLink.addEventListener("click", function () {
+      var navbarToggler = document.querySelector(".mobile-nav-toggle");
+      navbarToggler.click();
+    });
+  });
+});
+
 (function () {
   "use strict";
 

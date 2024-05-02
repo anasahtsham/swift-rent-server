@@ -88,6 +88,10 @@ export const login = async (req, res) => {
     if (user.userpassword !== hashedPassword) {
       return res.status(401).json({ error: "Password does not match!" });
     }
+    // if user is banned, return error
+    if (user.isbanned) {
+      return res.status(401).json({ error: "User is banned!" });
+    }
 
     // Return the user ID, userType, and success status
     return res.status(200).json({
@@ -283,6 +287,29 @@ export const switchRole = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in switchRole controller:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// API 8: Check if the user is banned
+export const checkBan = async (req, res) => {
+  const { userID } = req.body;
+  try {
+    // Get the user information
+    const user = await db.query(
+      "SELECT isBanned FROM UserInformation WHERE id = $1",
+      [userID]
+    );
+
+    // Check if the user exists
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Return the ban status
+    return res.status(200).json({ isBanned: user.rows[0].isbanned });
+  } catch (error) {
+    console.error("Error in checkBan controller:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
