@@ -9,11 +9,12 @@
 //Code to close the mobile menu when a link is clicked
 document.addEventListener("DOMContentLoaded", function () {
   var navLinks = document.querySelectorAll("#navbar ul li a");
-
   navLinks.forEach(function (navLink) {
     navLink.addEventListener("click", function () {
-      var navbarToggler = document.querySelector(".mobile-nav-toggle");
-      navbarToggler.click();
+      if (window.innerWidth <= 992) {
+        var navbarToggler = document.querySelector(".mobile-nav-toggle");
+        navbarToggler.click();
+      }
     });
   });
 });

@@ -1057,6 +1057,9 @@ section {
     height: 80vh;
     min-height: 580px;
   }
+  .BeechMeinHoJao {
+    text-align: center;
+  }
 }
 
 /* Media Queries for Mobile */
@@ -1080,5 +1083,8 @@ section {
   .hero-section > .container > .row {
     height: 85vh;
     min-height: 480px;
+  }
+  .BeechMeinHoJao2 {
+    text-align: center;
   }
 }
