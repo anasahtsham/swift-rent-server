@@ -90,7 +90,9 @@ export const login = async (req, res) => {
     }
     // if user is banned, return error
     if (user.isbanned) {
-      return res.status(401).json({ error: "User is banned!" });
+      return res
+        .status(401)
+        .json({ error: "You are banned from using SwiftRent" });
     }
 
     // Return the user ID, userType, and success status
@@ -294,6 +296,7 @@ export const switchRole = async (req, res) => {
 // API 8: Check if the user is banned
 export const checkBan = async (req, res) => {
   const { userID } = req.body;
+  console.log("userid:" + userID);
   try {
     // Get the user information
     const user = await db.query(
