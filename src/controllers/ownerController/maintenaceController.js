@@ -57,7 +57,10 @@ export const displayMaintenanceReport = async (req, res) => {
     ORDER BY M.id DESC`,
       [ownerID, propertyID]
     );
-    const maintenanceReports = result.rows;
+    const maintenanceReports = result.rows.map((row) => ({
+      ...row,
+      cost: parseInt(row.cost.replace("$", "").replace(/,/g, ""), 10),
+    }));
     res.status(200).json({ maintenanceReports });
   } catch (error) {
     console.error(
@@ -99,7 +102,10 @@ export const displayAllMaintenanceReports = async (req, res) => {
         ORDER BY M.id DESC`,
       [ownerID]
     );
-    const maintenanceReports = result.rows;
+    const maintenanceReports = result.rows.map((row) => ({
+      ...row,
+      cost: parseInt(row.cost.replace("$", "").replace(/,/g, ""), 10),
+    }));
     res.status(200).json({ maintenanceReports });
   } catch (error) {
     console.error("Error fetching all properties maintenance reports:", error);
