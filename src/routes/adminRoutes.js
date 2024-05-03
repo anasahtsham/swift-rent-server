@@ -5,6 +5,7 @@ import * as authentication from "../controllers/adminController/authentication.j
 import * as areaManagement from "../controllers/adminController/areaManagement.js";
 import * as complaintManagement from "../controllers/adminController/complaintManagement.js";
 import * as userManagement from "../controllers/adminController/userManagement.js";
+import * as analytics from "../controllers/adminController/analytics.js";
 
 //Authentication
 adminRouter.post("/login", authentication.login);
@@ -28,7 +29,20 @@ adminRouter.post("/edit-user", userManagement.editUser);
 adminRouter.post("/ban-user", userManagement.banUser);
 adminRouter.post("/un-ban-user", userManagement.unbanUser);
 adminRouter.post("/reset-password", userManagement.resetPassword);
+//Analytics
+// adminRouter.get("/user-analytics", analytics.getUsersAnalytics);
+// adminRouter.get("/property-analytics", analytics.getPropertiesAnalytics);
+// adminRouter.get(
+//   "/property-status-analytics",
+//   analytics.getPropertyStatusesAnalytics
+// );
+// adminRouter.get("/complaint-analytics", analytics.getUserComplaintsAnalytics);
+// adminRouter.get(
+//   "/property-types-per-city",
+//   analytics.getPropertyTypesPerCityAnalytics
+// );
+adminRouter.get("/admin-analytics", analytics.adminAnalytics);
 
-//Total adminRouter routes: 10
+//Total adminRouter routes: 23
 
 export default adminRouter;
