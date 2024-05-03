@@ -26,17 +26,21 @@ app.use(
 // Apply routes
 applyRoutes(app);
 
-// Send the ../public folder FOR HOSTING THE LANDING PAGE
-// app.use(
-//   express.static(
-//     path.join(path.dirname(fileURLToPath(import.meta.url)), "public")
-//   )
-// );
+//Send the ../public folder FOR HOSTING THE LANDING PAGE
+app.use(
+  "/landing-page",
+  express.static(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "public")
+  )
+);
 
 // Default route FOR DISABLING THE LANDING PAGE
-app.get("/", (req, res) => {
-  res.send("Welcome to the SwiftRent API Server. 🏠");
-});
+app.use(
+  "/landing-page",
+  express.static(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "public")
+  )
+);
 
 // Start the server
 app.listen(port, () => {
