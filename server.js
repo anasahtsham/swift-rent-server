@@ -6,6 +6,7 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import applyRoutes from "./src/routes/index.js";
 import path from "path";
+import { logVisit } from "./src/helpers/websitelogger.js";
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,13 @@ app.use(
 applyRoutes(app);
 
 //Send the ../public folder FOR HOSTING THE LANDING PAGE
+app.use((req, res, next) => {
+  if (req.url === "/" && req.method === "GET") {
+    logVisit();
+  }
+  next();
+});
+
 app.use(
   express.static(
     path.join(path.dirname(fileURLToPath(import.meta.url)), "public")

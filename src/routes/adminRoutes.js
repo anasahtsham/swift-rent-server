@@ -30,17 +30,11 @@ adminRouter.post("/ban-user", userManagement.banUser);
 adminRouter.post("/un-ban-user", userManagement.unbanUser);
 adminRouter.post("/reset-password", userManagement.resetPassword);
 //Analytics
-// adminRouter.get("/user-analytics", analytics.getUsersAnalytics);
-// adminRouter.get("/property-analytics", analytics.getPropertiesAnalytics);
-// adminRouter.get(
-//   "/property-status-analytics",
-//   analytics.getPropertyStatusesAnalytics
-// );
-// adminRouter.get("/complaint-analytics", analytics.getUserComplaintsAnalytics);
-// adminRouter.get(
-//   "/property-types-per-city",
-//   analytics.getPropertyTypesPerCityAnalytics
-// );
+adminRouter.get("/pie-chart-analytics", analytics.getAnalyticsPieCharts);
+adminRouter.get(
+  "/property-types-per-city",
+  analytics.getPropertyTypesPerCityAnalytics
+);
 adminRouter.get("/admin-analytics", analytics.adminAnalytics);
 
 //Total adminRouter routes: 23
