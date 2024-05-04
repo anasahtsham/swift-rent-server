@@ -50,6 +50,56 @@ export const getAnalyticsPieCharts = async (req, res) => {
   }
 };
 
+// Analytics: Property Statuses with Cities (SunBurst)
+export const getPropertyStatusesWithCities = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        C.cityName,
+        COUNT(*) AS "NoOfProperties",
+        SUM(CASE WHEN P.propertyStatus = 'V' THEN 1 ELSE 0 END) AS "NoOfVacantProperties",
+        SUM(CASE WHEN P.propertyStatus = 'L' THEN 1 ELSE 0 END) AS "NoOfLeasedProperties"
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.propertyStatus != 'D'
+      GROUP BY C.cityName
+    `);
+
+    const propertyStatuses = result.rows.map((row, index) => {
+      const hue = 218 - Math.floor((index / result.rows.length) * 30); // Adjusting hue dynamically
+      const saturation = 89.7;
+      const lightness = 40.8 + Math.floor((index / result.rows.length) * 10); // Lightening lightness dynamically
+      const cityColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+      return {
+        id: row.cityname,
+        color: cityColor,
+        children: [
+          {
+            id: "Vacant",
+            value: parseInt(row.NoOfVacantProperties),
+            color: cityColor,
+          },
+          {
+            id: "Leased",
+            value: parseInt(row.NoOfLeasedProperties),
+            color: cityColor,
+          },
+        ],
+      };
+    });
+
+    res.status(200).json({ children: propertyStatuses });
+  } catch (error) {
+    console.error("Error fetching property statuses with cities:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch property statuses with cities.",
+    });
+  }
+};
+
 // Analytics: Property Types Per City
 export const getPropertyTypesPerCityAnalytics = async (req, res) => {
   try {

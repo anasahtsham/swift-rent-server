@@ -31,6 +31,7 @@ adminRouter.post("/un-ban-user", userManagement.unbanUser);
 adminRouter.post("/reset-password", userManagement.resetPassword);
 //Analytics
 adminRouter.get("/pie-chart-analytics", analytics.getAnalyticsPieCharts);
+adminRouter.get("/sunburst-analytics", analytics.getPropertyStatusesWithCities);
 adminRouter.get(
   "/property-types-per-city",
   analytics.getPropertyTypesPerCityAnalytics
