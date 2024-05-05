@@ -298,6 +298,16 @@ export const registerTenant = async (req, res) => {
   } = req.body;
 
   try {
+    // Check if the phone number is of a tenant, see if isTenant is true
+    const isTenantQuery = await db.query(
+      `SELECT isTenant FROM UserInformation WHERE phone = $1`,
+      [phone]
+    );
+
+    if (isTenantQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User not registered as Tenant" });
+    }
+
     //make sure that there are no other pending leases or active leases against this propertyID in the database.
     const leaseQuery = await db.query(
       `SELECT leaseStatus FROM PropertyLease WHERE propertyID = $1 ORDER BY id DESC`,
