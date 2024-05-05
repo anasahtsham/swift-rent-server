@@ -5,10 +5,10 @@ export const getCities = async (req, res) => {
   try {
     // Get the list of all cities
     const query = `
-          SELECT cityName
-          FROM City
-          ORDER BY id ASC;
-        `;
+    SELECT LOWER(cityName) AS cityName
+    FROM City
+    ORDER BY id ASC;
+    `;
     const cities = await db.query(query);
 
     // Send the list of cities as response
@@ -27,7 +27,7 @@ export const viewHireRequests = async (req, res) => {
   try {
     // Get the list of all pending hiring requests
     const query = `
-        SELECT MHR.id AS "id (managerHireRequest)",
+        SELECT MHR.id,
                CONCAT(UI.firstName, ' ', UI.lastName) AS "owner name",
                CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS "propertyAddress",
                MHR.purpose
