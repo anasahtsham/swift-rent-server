@@ -133,13 +133,13 @@ export const generateCounterRequest = async (req, res) => {
       rent,
     } = req.body;
 
-    // Check if the manager has a counter request already with counterOfferStatus = P (Pending) or I (Interview) or A (Accepted)
+    // Check if the manager has a counter request already with counterRequestStatus = P (Pending) or I (Interview) or A (Accepted)
     const checkQuery = `
           SELECT *
           FROM ManagerHireCounterRequest
           WHERE managerID = $1
           AND managerHireRequestID = $2
-          AND counterOfferStatus IN ('P', 'I', 'A');
+          AND counterRequestStatus IN ('P', 'I', 'A');
         `;
     const checkResult = await db.query(checkQuery, [
       managerID,
@@ -148,7 +148,8 @@ export const generateCounterRequest = async (req, res) => {
 
     if (checkResult.rows.length > 0) {
       return res.status(400).json({
-        error: "You already have an active counter request submitted.",
+        error:
+          "You already have an active counter request submitted for this property.",
       });
     }
 
@@ -157,15 +158,15 @@ export const generateCounterRequest = async (req, res) => {
 
     // Insert counter request into ManagerHireCounterRequest table
     const insertQuery = `
-          INSERT INTO ManagerHireCounterRequest (managerHireRequestID, managerID, oneTimePay, salaryFixed, salaryPercentage, rent, counterOfferStatus)
+          INSERT INTO ManagerHireCounterRequest (managerHireRequestID, managerID, oneTimePay, salaryFixed, salaryPercentage, rent, counterRequestStatus)
           VALUES ($1, $2, $3, $4, $5, $6, 'P')
         `;
     await db.query(insertQuery, [
       managerHireRequestID,
       managerID,
       oneTimePay,
-      parseInt(salaryFixed),
-      parseInt(salaryPercentage),
+      salaryFixed,
+      salaryPercentage,
       rent,
     ]);
 
@@ -175,8 +176,6 @@ export const generateCounterRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error generating counter request:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to generate counter request." });
+    res.status(500).json({ error: "Failed to generate counter request." });
   }
 };
