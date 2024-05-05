@@ -10,5 +10,9 @@ managerRouter.post(
   "/detailed-hire-request",
   managerController.detailedHiringRequest
 );
+managerRouter.post(
+  "/send-counter-request",
+  managerController.generateCounterRequest
+);
 
 export default managerRouter;

@@ -197,16 +197,6 @@ export const acceptLease = async (req, res) => {
       registeredbytype,
     } = rows[0];
 
-    // Convert rent, advancepayment and fine to integer
-    const formattedAdvancePayment = parseFloat(
-      advancepayment.replace(/[^0-9.-]+/g, "")
-    );
-    const advancePaymentInt = Math.round(formattedAdvancePayment);
-    const formattedRent = parseFloat(rent.replace(/[^0-9.-]+/g, ""));
-    const rentInt = Math.round(formattedRent);
-    const formattedFine = parseFloat(fine.replace(/[^0-9.-]+/g, ""));
-    const fineInt = Math.round(formattedFine);
-
     // Update property table
     const updatePropertyQuery = `
       UPDATE Property
@@ -225,10 +215,10 @@ export const acceptLease = async (req, res) => {
 
     // Calculate rent amount for TenantRentNotice
     let rentAmount = 0;
-    if (advancePaymentInt === 0) {
-      rentAmount = rentInt;
+    if (advancepayment === 0) {
+      rentAmount = rent;
     } else {
-      rentAmount = advancePaymentInt;
+      rentAmount = advancepayment;
     }
 
     // Insert into TenantRentNotice
@@ -242,7 +232,7 @@ export const acceptLease = async (req, res) => {
       managerid,
       rentAmount,
       duedate,
-      fineInt,
+      fine,
     ]);
 
     // Find out property address CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
@@ -283,7 +273,7 @@ export const acceptLease = async (req, res) => {
     `;
 
     // Create notification text
-    const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress} before ${duedate} to avoid fine of ${fineInt}`;
+    const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress} before ${duedate} to avoid fine of ${fine}`;
 
     // Get ownerID from property table
     const getOwnerIDQuery = `SELECT ownerID FROM Property WHERE id = $1;`;
@@ -325,7 +315,8 @@ export const listOfRentals = async (req, res) => {
       INNER JOIN City C ON A.cityID = C.id
       INNER JOIN UserInformation uo ON P.ownerID = uo.id
       LEFT JOIN UserInformation um ON pl.managerID = um.id
-      WHERE pl.tenantID = $1 AND pl.leaseStatus = 'A';
+      WHERE pl.tenantID = $1 AND pl.leaseStatus = 'A'
+      ORDER BY pl.leaseCreatedOn DESC;
     `;
     const { rows } = await db.query(activeLeasesQuery, [tenantID]);
 
