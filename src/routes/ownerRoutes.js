@@ -3,6 +3,7 @@ const ownerRouter = express.Router();
 
 import * as ownerController from "../controllers/ownerController/ownerPropertyController.js";
 import * as maintenanceController from "../controllers/ownerController/maintenaceController.js";
+import * as hireController from "../controllers/ownerController/hireController.js";
 
 ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
@@ -20,6 +21,11 @@ ownerRouter.post(
 ownerRouter.post(
   "/display-all-maintenace-reports",
   maintenanceController.displayAllMaintenanceReports
+);
+//Hire Manager
+ownerRouter.post(
+  "/generate-hire-request",
+  hireController.generateHiringRequest
 );
 
 //Total ownerRouter routes: 7

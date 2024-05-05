@@ -33,10 +33,9 @@ adminRouter.post("/reset-password", userManagement.resetPassword);
 adminRouter.get("/pie-chart-analytics", analytics.getAnalyticsPieCharts);
 adminRouter.get("/sunburst-analytics", analytics.getPropertyStatusesWithCities);
 adminRouter.get(
-  "/property-types-per-city",
+  "/h-s-bar-graph-analytics",
   analytics.getPropertyTypesPerCityAnalytics
 );
-adminRouter.get("/admin-analytics", analytics.adminAnalytics);
 
 //Total adminRouter routes: 23
 

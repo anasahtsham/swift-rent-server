@@ -82,7 +82,7 @@ export const getPropertyStatusesWithCities = async (req, res) => {
             color: cityColor,
           },
           {
-            id: "Leased",
+            id: "Rented",
             value: parseInt(row.NoOfLeasedProperties),
             color: cityColor,
           },
@@ -100,162 +100,60 @@ export const getPropertyStatusesWithCities = async (req, res) => {
   }
 };
 
-// Analytics: Property Types Per City
+// Analytics: Property Types Per City (Horizontal Stacked Bar Graph)
 export const getPropertyTypesPerCityAnalytics = async (req, res) => {
   try {
     // Fetch property types per city data from the database
     const result = await db.query(`
-    SELECT
-        C.cityName,
-        PST.propertySubType,
-        (
-        SELECT COUNT(*)
-        FROM Property P
-        WHERE P.areaID = A.id
-            AND P.propertySubTypeID = PST.id
-        ) AS "NoOfPropertiesPerSubType"
-    FROM City C
-    LEFT JOIN Area A ON C.id = A.cityID
-    LEFT JOIN PropertySubType PST ON TRUE
-    WHERE EXISTS (
-        SELECT 1
-        FROM Property P
-        WHERE P.areaID = A.id
-            AND P.propertySubTypeID = PST.id
-    )
-    ORDER BY C.cityName, PST.propertySubType;
-      `);
+      SELECT
+          C.cityName AS city,
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Agricultural Plot' THEN 1 ELSE 0 END), 0) AS "Agricultural Plot",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Apartment' THEN 1 ELSE 0 END), 0) AS "Apartment",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Building' THEN 1 ELSE 0 END), 0) AS "Building",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Commercial Plot' THEN 1 ELSE 0 END), 0) AS "Commercial Plot",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Factory' THEN 1 ELSE 0 END), 0) AS "Factory",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'House' THEN 1 ELSE 0 END), 0) AS "House",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Industrial Plot' THEN 1 ELSE 0 END), 0) AS "Industrial Plot",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Lower Floor' THEN 1 ELSE 0 END), 0) AS "Lower Floor",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Office' THEN 1 ELSE 0 END), 0) AS "Office",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Room' THEN 1 ELSE 0 END), 0) AS "Room",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Shop' THEN 1 ELSE 0 END), 0) AS "Shop",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Upper Floor' THEN 1 ELSE 0 END), 0) AS "Upper Floor",
+          COALESCE(SUM(CASE WHEN PST.propertySubType = 'Warehouse' THEN 1 ELSE 0 END), 0) AS "Warehouse"
+      FROM City C
+      LEFT JOIN Area A ON C.id = A.cityID
+      LEFT JOIN Property P ON A.id = P.areaID
+      LEFT JOIN PropertySubType PST ON P.propertySubTypeID = PST.id
+      GROUP BY C.cityName
+      ORDER BY C.cityName
+    `);
 
     // Process the query result to aggregate property types per city
-    const analytics = {};
-    result.rows.forEach((row) => {
-      const { cityname, propertysubtype, NoOfPropertiesPerSubType } = row;
-      if (!analytics[cityname]) {
-        analytics[cityname] = {};
-      }
-      if (!analytics[cityname][propertysubtype]) {
-        analytics[cityname][propertysubtype] = 0;
-      }
-      analytics[cityname][propertysubtype] += NoOfPropertiesPerSubType;
+    const analytics = result.rows.map((row) => {
+      return {
+        city: row.city,
+        "Agricultural Plots": parseInt(row["Agricultural Plot"]),
+        Apartments: parseInt(row.Apartment),
+        Buildings: parseInt(row.Building),
+        "Commercial Plots": parseInt(row["Commercial Plot"]),
+        Factories: parseInt(row.Factory),
+        Houses: parseInt(row.House),
+        "Industrial Plots": parseInt(row["Industrial Plot"]),
+        "Lower Floors": parseInt(row["Lower Floor"]),
+        Offices: parseInt(row.Office),
+        Rooms: parseInt(row.Room),
+        Shops: parseInt(row.Shop),
+        "Upper Floors": parseInt(row["Upper Floor"]),
+        Warehouses: parseInt(row.Warehouse),
+      };
     });
 
-    res.status(200).json({ analytics });
+    res.status(200).json(analytics);
   } catch (error) {
     console.error("Error fetching property types per city analytics:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch property types per city analytics.",
-    });
-  }
-};
-
-// Admin Analytics
-export const adminAnalytics = async (req, res) => {
-  try {
-    // Analytics: Users
-    const usersResult = await db.query(`
-        SELECT 
-          COUNT(*) AS "NoOfUsers",
-          SUM(CASE WHEN isOwner THEN 1 ELSE 0 END) AS "NoOfOwners",
-          SUM(CASE WHEN isTenant THEN 1 ELSE 0 END) AS "NoOfTenants",
-          SUM(CASE WHEN isManager THEN 1 ELSE 0 END) AS "NoOfManagers"
-        FROM UserInformation
-        WHERE NOT isBanned
-      `);
-    const usersAnalytics = usersResult.rows[0];
-
-    // Analytics: Properties
-    const propertiesResult = await db.query(`
-        SELECT COUNT(*) AS "NoOfProperties" FROM Property WHERE propertyStatus != 'D'
-      `);
-    const propertiesCount = propertiesResult.rows[0]["NoOfProperties"];
-
-    const citiesResult = await db.query(`
-        SELECT C.cityName, COUNT(*) AS "NoOfPropertiesInCity"
-        FROM Property P
-        JOIN Area A ON P.areaID = A.id
-        JOIN City C ON A.cityID = C.id
-        WHERE P.propertyStatus != 'D'
-        GROUP BY C.cityName
-      `);
-    const cities = citiesResult.rows.map((row) => ({
-      cityName: row.cityname,
-      NoOfProperties: row.NoOfPropertiesInCity,
-    }));
-
-    // Analytics: Property Statuses
-    const propertyStatusesResult = await db.query(`
-        SELECT 
-          COUNT(*) AS "NoOfProperties",
-          SUM(CASE WHEN propertyStatus = 'V' THEN 1 ELSE 0 END) AS "NoOfVacantProperties",
-          SUM(CASE WHEN propertyStatus = 'L' THEN 1 ELSE 0 END) AS "NoOfLeasedProperties"
-        FROM Property
-        WHERE propertyStatus != 'D'
-      `);
-    const propertyStatusesAnalytics = propertyStatusesResult.rows[0];
-
-    // Analytics: User Complaints
-    const userComplaintsResult = await db.query(`
-        SELECT 
-          COUNT(*) AS "NoOfComplaints",
-          SUM(CASE WHEN complaintStatus = 'S' THEN 1 ELSE 0 END) AS "NoOfSolved",
-          SUM(CASE WHEN complaintStatus = 'R' THEN 1 ELSE 0 END) AS "NoOfRejected",
-          SUM(CASE WHEN complaintStatus = 'P' THEN 1 ELSE 0 END) AS "NoOfPending",
-          SUM(CASE WHEN complaintStatus = 'I' THEN 1 ELSE 0 END) AS "NoOfInProgress"
-        FROM AdminComplaint
-      `);
-    const userComplaintsAnalytics = userComplaintsResult.rows[0];
-
-    // Analytics: Property Types Per City
-    const propertyTypesPerCityResult = await db.query(`
-        SELECT 
-            C.cityName,
-            PST.propertySubType,
-            (
-            SELECT COUNT(*)
-            FROM Property P
-            WHERE P.areaID = A.id
-                AND P.propertySubTypeID = PST.id
-            ) AS "NoOfPropertiesPerSubType"
-        FROM City C
-        LEFT JOIN Area A ON C.id = A.cityID
-        LEFT JOIN PropertySubType PST ON TRUE
-        WHERE EXISTS (
-            SELECT 1
-            FROM Property P
-            WHERE P.areaID = A.id
-                AND P.propertySubTypeID = PST.id
-        )
-        ORDER BY C.cityName, PST.propertySubType;
-      `);
-
-    // Process the query result to aggregate property types per city
-    const propertyTypesPerCityAnalytics = {};
-    propertyTypesPerCityResult.rows.forEach((row) => {
-      const { cityname, propertysubtype, NoOfPropertiesPerSubType } = row;
-      if (!propertyTypesPerCityAnalytics[cityname]) {
-        propertyTypesPerCityAnalytics[cityname] = {};
-      }
-      if (!propertyTypesPerCityAnalytics[cityname][propertysubtype]) {
-        propertyTypesPerCityAnalytics[cityname][propertysubtype] = 0;
-      }
-      propertyTypesPerCityAnalytics[cityname][propertysubtype] +=
-        NoOfPropertiesPerSubType;
-    });
-
-    res.status(200).json({
-      usersAnalytics,
-      propertiesCount,
-      cities,
-      propertyStatusesAnalytics,
-      userComplaintsAnalytics,
-      propertyTypesPerCityAnalytics,
-    });
-  } catch (error) {
-    console.error("Error fetching admin analytics:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch admin analytics.",
     });
   }
 };
