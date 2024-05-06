@@ -365,9 +365,9 @@ export const registerTenant = async (req, res) => {
     const tenantID = tenantQuery.rows[0].id;
 
     //TeanatID cannot be same as ownerID
-    if (tenantID === ownerid) {
+    if (tenantID === registeredByID) {
       return res.status(400).json({
-        error: "Owner cannot register himself as a tenant on his own property!",
+        error: "Cannot register yourself as a tenant on his own property!",
       });
     }
 

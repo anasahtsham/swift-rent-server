@@ -22,6 +22,7 @@ export const testQuery = async (req, res) => {
                                                  AND MHC.managerID = $1
                                                  AND MHC.counterRequestStatus IN ('P', 'I')
       WHERE MHR.managerStatus = 'P'
+      AND P.ownerID != $1
       ORDER BY MHR.id DESC;
     `;
 
