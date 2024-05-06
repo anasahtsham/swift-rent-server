@@ -112,6 +112,7 @@ export const CustomerSupportStatus = async (req, res) => {
     // Retrieve customer support requests submitted by the user
     const customerSupportRequestsQuery = `
       SELECT 
+      id,
       complaintTitle AS Title, 
       complaintDescription AS Description, 
       complaintStatus AS Status,

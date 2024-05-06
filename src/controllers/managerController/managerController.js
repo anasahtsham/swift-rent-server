@@ -154,7 +154,29 @@ export const generateCounterRequest = async (req, res) => {
     }
 
     // Send notification to the owner
-    // Logic for sending notification to the owner goes here
+    const propertyAddressQuery = `
+      SELECT
+      CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = (SELECT propertyID FROM ManagerHireRequest WHERE id = $1);
+    `;
+    const { rows: addressRows } = await db.query(propertyAddressQuery, [
+      managerHireRequestID,
+    ]);
+    const propertyAddress = addressRows[0].address;
+
+    const notificationQuery = `
+            INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+            VALUES (
+              (SELECT ownerID FROM Property WHERE id = (SELECT propertyID FROM ManagerHireRequest WHERE id = $1)), 'O',
+              $2, 'M',
+              'Sent you a counter request for your property ${propertyAddress}.',
+              'R'
+            );
+          `;
+    await db.query(notificationQuery, [managerHireRequestID, managerID]);
 
     // Insert counter request into ManagerHireCounterRequest table
     const insertQuery = `

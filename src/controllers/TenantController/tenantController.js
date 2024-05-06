@@ -215,10 +215,10 @@ export const acceptLease = async (req, res) => {
 
     // Calculate rent amount for TenantRentNotice
     let rentAmount = 0;
-    if (advancepayment === 0) {
-      rentAmount = rent;
+    if (parseInt(advancepayment) === 0) {
+      rentAmount = parseInt(rent);
     } else {
-      rentAmount = advancepayment;
+      rentAmount = parseInt(advancepayment);
     }
 
     // Insert into TenantRentNotice
@@ -273,7 +273,7 @@ export const acceptLease = async (req, res) => {
     `;
 
     // Create notification text
-    const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress} before ${duedate} to avoid fine of ${fine}`;
+    const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress}`;
 
     // Get ownerID from property table
     const getOwnerIDQuery = `SELECT ownerID FROM Property WHERE id = $1;`;

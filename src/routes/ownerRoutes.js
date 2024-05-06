@@ -27,6 +27,11 @@ ownerRouter.post(
   "/generate-hire-request",
   hireController.generateHiringRequest
 );
+//viewManagerHireCounterRequests
+ownerRouter.post(
+  "/view-counter-requests",
+  hireController.viewManagerHireCounterRequests
+);
 
 //Total ownerRouter routes: 7
 

@@ -30,7 +30,7 @@ export const registerAccount = async (req, res) => {
     // Insert the new user information into the database
     const query = `
       INSERT INTO UserInformation 
-      (firstName, lastName, DOB, phone, email, userPassword, isManager, isOwner, isTenant)
+      (firstName, lastName, DOB, phone, email, userPassword, isTenant, isOwner, isManager)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `;
@@ -41,9 +41,9 @@ export const registerAccount = async (req, res) => {
       phone,
       email,
       hashedPassword,
-      userType === "manager",
-      userType === "owner",
-      userType === "tenant",
+      userType === "T",
+      userType === "O",
+      userType === "M",
     ];
 
     const { rows } = await db.query(query, values);
@@ -86,7 +86,7 @@ export const login = async (req, res) => {
 
     // Check if the provided password matches the stored password
     if (user.userpassword !== hashedPassword) {
-      return res.status(401).json({ error: "Password does not match!" });
+      return res.status(401).json({ error: "Credentials wrong!" });
     }
     // if user is banned, return error
     if (user.isbanned) {
