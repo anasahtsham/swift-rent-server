@@ -14,5 +14,9 @@ managerRouter.post(
   "/send-counter-request",
   managerController.generateCounterRequest
 );
+managerRouter.post(
+  "/view-managed-properties",
+  managerController.viewManagedProperties
+);
 
 export default managerRouter;

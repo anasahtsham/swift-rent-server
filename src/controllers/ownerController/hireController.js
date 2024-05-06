@@ -531,16 +531,6 @@ export const deleteManagerHireRequest = async (req, res) => {
     // Extract propertyID from request body
     const { propertyID } = req.body;
 
-    //Check if there is a ManagerHireRequest with the provided propertyID
-    const checkQuery = `SELECT * FROM ManagerHireRequest WHERE propertyID = $1 AND managerStatus = 'P';`;
-    const checkResult = await db.query(checkQuery, [propertyID]);
-
-    if (checkResult.rows.length === 0) {
-      return res.status(400).json({
-        success: "Manager hire request does not exist.",
-      });
-    }
-
     //Check if there is a managerID in the Property table
     const managerQuery = `SELECT managerID FROM Property WHERE id = $1;`;
     const managerResult = await db.query(managerQuery, [propertyID]);
@@ -548,6 +538,16 @@ export const deleteManagerHireRequest = async (req, res) => {
     if (managerResult.rows[0].managerid != null) {
       return res.status(400).json({
         success: "Manager contract active, cannot delete.",
+      });
+    }
+
+    //Check if there is a ManagerHireRequest with the provided propertyID
+    const checkQuery = `SELECT * FROM ManagerHireRequest WHERE propertyID = $1 AND managerStatus = 'P';`;
+    const checkResult = await db.query(checkQuery, [propertyID]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(400).json({
+        success: "Manager hire request does not exist.",
       });
     }
 
