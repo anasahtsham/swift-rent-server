@@ -331,9 +331,7 @@ export const registerTenant = async (req, res) => {
       `SELECT 
         CONCAT(
           p.propertyAddress, ', ', a.areaName, ', ', c.cityName
-        ) AS address, 
-        p.managerID AS managerID,
-        p.ownerID AS ownerID
+        ) AS address
       FROM Property p
       JOIN Area a ON p.areaID = a.id
       JOIN City c ON a.cityID = c.id
@@ -345,10 +343,7 @@ export const registerTenant = async (req, res) => {
       return res.status(404).json({ error: "Property not found" });
     }
 
-    const { managerid, address, ownerid } = propertyQuery.rows[0];
-
-    // Set managerID in the property lease table if a manager is registered
-    const registeredManagerID = managerid ? managerid : null;
+    const { address } = propertyQuery.rows[0];
 
     // Find the tenantID using the provided phone number
     const tenantQuery = await db.query(
@@ -380,13 +375,12 @@ export const registerTenant = async (req, res) => {
         propertyID, tenantID, registeredByType, registeredByID, managerID, leaseStatus,
         incrementPercentage, incrementPeriod, rent, securityDeposit, advancePayment,
         advancePaymentForMonths, dueDate, fine, leasedForMonths
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         propertyID,
         tenantID,
         registeredByType,
         registeredByID,
-        registeredManagerID,
         leaseStatus,
         incrementPercentage,
         incrementPeriod,
