@@ -85,6 +85,17 @@ export const viewManagerHireCounterRequests = async (req, res) => {
     // Extract propertyID from request parameters
     const { propertyID } = req.body;
 
+    // Check in the Property table is managerID exists
+    const propertyQuery = `SELECT managerID FROM Property WHERE id = $1`;
+    const property = await db.query(propertyQuery, [propertyID]);
+
+    // If managerID is null then return error
+    if (property.rows[0].managerid != null) {
+      return res.status(400).json({
+        success: "Manager is already assigned to this property.",
+      });
+    }
+
     // Query to fetch manager hire counter requests
     const query = `
       SELECT MHC.id,
@@ -93,6 +104,7 @@ export const viewManagerHireCounterRequests = async (req, res) => {
              MHC.salaryFixed,
              MHC.salaryPercentage,
              MHC.rent,
+             MHC.counterRequestStatus,
              TO_CHAR(MHC.counterRequestOn, 'DD-MM-YYYY HH24:MI') AS "counterRequestOn"
       FROM ManagerHireRequest MHR
       JOIN ManagerHireCounterRequest MHC ON MHR.id = MHC.managerHireRequestID
@@ -100,7 +112,7 @@ export const viewManagerHireCounterRequests = async (req, res) => {
       JOIN Property P ON MHR.propertyID = P.id
       JOIN Area A ON P.areaID = A.id
       JOIN City C ON A.cityID = C.id
-      WHERE P.id = $1 AND MHR.managerStatus = 'P';
+      WHERE P.id = $1 AND MHR.managerStatus = 'P' AND MHC.counterRequestStatus != 'R' AND MHC.counterRequestStatus != 'A';
     `;
     const counterRequests = await db.query(query, [propertyID]);
 
@@ -313,6 +325,202 @@ export const inviteManagerForInterview = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to send interview invitation.",
+    });
+  }
+};
+
+//API 5: Accept Manager Hire Counter Request
+export const acceptCounterRequest = async (req, res) => {
+  try {
+    // Extract managerCounterRequestID from request parameters
+    const { managerCounterRequestID } = req.body;
+
+    const statusQuery = `SELECT counterRequestStatus FROM ManagerHireCounterRequest WHERE id = $1;`;
+    const status = await db.query(statusQuery, [managerCounterRequestID]);
+
+    if (status.rows.length === 0) {
+      return res.status(400).json({
+        success: "Counter request does not exist.",
+      });
+    }
+
+    if (status.rows[0].counterrequeststatus === "R") {
+      return res.status(400).json({
+        success: "Counter request is already rejected.",
+      });
+    }
+
+    if (status.rows[0].counterrequeststatus === "A") {
+      return res.status(400).json({
+        success: "Counter request is already accepted.",
+      });
+    }
+
+    if (status.rows[0].counterrequeststatus === "P") {
+      return res.status(400).json({
+        success: "Interview invitation is still pending.",
+      });
+    }
+
+    // Update the status of counterRequestStatus to 'A' (Accepted)
+    const updateCounterRequestStatusQuery = `
+      UPDATE ManagerHireCounterRequest
+      SET counterRequestStatus = 'A'
+      WHERE id = $1;
+    `;
+    await db.query(updateCounterRequestStatusQuery, [managerCounterRequestID]);
+
+    // Get manager details and contract details
+    const managerDetailsQuery = `
+      SELECT 
+        managerID, oneTimePay, salaryFixed, salaryPercentage, rent
+      FROM ManagerHireCounterRequest
+      WHERE id = $1;
+    `;
+    const managerDetailsResult = await db.query(managerDetailsQuery, [
+      managerCounterRequestID,
+    ]);
+    const { managerid, onetimepay, salaryfixed, salarypercentage, rent } =
+      managerDetailsResult.rows[0];
+
+    // Update the status of managerStatus in ManagerHireRequest to 'A' (Active)
+    const updateManagerHireRequestQuery = `
+      UPDATE ManagerHireRequest
+      SET managerStatus = 'A', 
+      managerID = $1,
+      oneTimePay = $2,
+      salaryFixed = $3,
+      salaryPercentage = $4,
+      rent = $5,
+      contractStartDate = CURRENT_DATE
+      WHERE id = (
+        SELECT managerHireRequestID
+        FROM ManagerHireCounterRequest
+        WHERE id = $6        
+      );
+    `;
+    await db.query(updateManagerHireRequestQuery, [
+      managerid,
+      onetimepay,
+      salaryfixed,
+      salarypercentage,
+      rent,
+      managerCounterRequestID,
+    ]);
+
+    // Set the managerID in ManagerCounterRequest as the managerID in Property table
+    const updatePropertyManagerIDQuery = `
+      UPDATE Property
+      SET managerID = $1
+      WHERE id = (
+        SELECT propertyID
+        FROM ManagerHireRequest
+        WHERE id = (
+          SELECT managerHireRequestID
+          FROM ManagerHireCounterRequest
+          WHERE id = $2
+        )
+      );
+    `;
+    await db.query(updatePropertyManagerIDQuery, [
+      managerid,
+      managerCounterRequestID,
+    ]);
+
+    // Check if there is a tenantID in the property table
+    const tenantQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = (
+        SELECT propertyID
+        FROM ManagerHireRequest
+        WHERE id = (
+          SELECT managerHireRequestID
+          FROM ManagerHireCounterRequest
+          WHERE id = $1
+        )
+      );
+    `;
+    const tenantResult = await db.query(tenantQuery, [managerCounterRequestID]);
+
+    // Find the owner id from UserInformation table
+    const ownerQuery = `
+        SELECT ui.id, ui.phone
+        FROM ManagerHireCounterRequest m
+        JOIN ManagerHireRequest mr ON m.managerHireRequestID = mr.id
+        JOIN Property p ON mr.propertyID = p.id
+        JOIN UserInformation ui ON p.ownerID = ui.id
+        WHERE m.id = $1;
+      `;
+    const ownerIDResult = await db.query(ownerQuery, [managerCounterRequestID]);
+    const ownerID = ownerIDResult.rows[0].id;
+
+    // Get the property address using the ManagerHireCounterRequestID
+    const propertyQuery = `
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = (
+          SELECT propertyID FROM ManagerHireRequest WHERE id = (
+            SELECT managerHireRequestID FROM ManagerHireCounterRequest WHERE id = $1
+          )
+        );
+      `;
+    const propertyAddressResult = await db.query(propertyQuery, [
+      managerCounterRequestID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
+    console.log(tenantResult.rows[0].tenantid);
+
+    if (tenantResult.rows[0].tenantid !== null) {
+      const tenantID = tenantResult.rows[0].tenantid;
+
+      // Get manager name
+      const managerNameQuery = `
+        SELECT CONCAT(firstName, ' ', lastName) AS managerName
+        FROM UserInformation
+        WHERE id = $1;
+      `;
+      const managerNameResult = await db.query(managerNameQuery, [managerid]);
+      const managerName = managerNameResult.rows[0].managername;
+
+      // Send a notification to the tenant
+      const tenantNotificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+        VALUES (
+          $1, 'T', 
+          $2,'O', 
+          'Your rental ${propertyAddress} is now managed by ${managerName}, he will be collecting your rents from now on.', 
+          'R'
+        );
+      `;
+      await db.query(tenantNotificationQuery, [tenantID, ownerID]);
+    }
+
+    // Send a notification to the manager
+    const managerNotificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES (
+        $1, 'M', 
+        $2, 'O', 
+        'The owner has accepted your counter request for the property ${propertyAddress}. You are now responsible for collecting rents for the tenant.', 
+        'R'
+      );
+    `;
+    await db.query(managerNotificationQuery, [managerid, ownerID]);
+
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: "Counter request accepted successfully.",
+    });
+  } catch (error) {
+    console.error("Error during accepting counter request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to accept counter request.",
     });
   }
 };

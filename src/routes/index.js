@@ -5,6 +5,7 @@ import managerRouter from "./managerRoutes.js";
 import tenantRouter from "./tenantRoutes.js";
 import ownerRouter from "./ownerRoutes.js";
 import commonRouter from "./commonRoutes.js";
+import testRouter from "./testRoutes.js";
 
 export default function applyRoutes(app) {
   app.use("/api/admin", adminRouter);
@@ -13,4 +14,5 @@ export default function applyRoutes(app) {
   app.use("/api/tenant", tenantRouter);
   app.use("/api/owner", ownerRouter);
   app.use("/api/common", commonRouter);
+  app.use("/api/test", testRouter);
 }

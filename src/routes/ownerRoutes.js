@@ -39,6 +39,10 @@ ownerRouter.post(
   "/interview-counter-request",
   hireController.inviteManagerForInterview
 );
+ownerRouter.post(
+  "/accept-counter-request",
+  hireController.acceptCounterRequest
+);
 
 //Total ownerRouter routes: 7
 
