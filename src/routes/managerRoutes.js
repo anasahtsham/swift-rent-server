@@ -5,7 +5,7 @@ import * as managerController from "../controllers/managerController/managerCont
 
 managerRouter.get("/get-cities", managerController.getCities);
 managerRouter.get("/get-cities-dropdown", managerController.getCitiesDropdown);
-managerRouter.get("/view-hire-requests", managerController.viewHireRequests);
+managerRouter.post("/view-hire-requests", managerController.viewHireRequests);
 managerRouter.post(
   "/detailed-hire-request",
   managerController.detailedHiringRequest

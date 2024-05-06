@@ -76,7 +76,7 @@ export const login = async (req, res) => {
     );
     if (userQuery.rows.length === 0) {
       // User not found
-      return res.status(401).json({ error: "Email or Phone incorrect!" });
+      return res.status(401).json({ error: "Credentials incorrect!" });
     }
 
     const user = userQuery.rows[0];
@@ -86,7 +86,7 @@ export const login = async (req, res) => {
 
     // Check if the provided password matches the stored password
     if (user.userpassword !== hashedPassword) {
-      return res.status(401).json({ error: "Credentials wrong!" });
+      return res.status(401).json({ error: "Credentials incorrect!" });
     }
     // if user is banned, return error
     if (user.isbanned) {
@@ -305,7 +305,7 @@ export const checkBan = async (req, res) => {
 
     // Check if the user exists
     if (user.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(200).json({ isBanned: user.rows[0].isbanned });
     }
 
     // Return the ban status
