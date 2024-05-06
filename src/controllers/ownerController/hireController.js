@@ -524,3 +524,51 @@ export const acceptCounterRequest = async (req, res) => {
     });
   }
 };
+
+//API 6: Delete Manager Hire Request
+export const deleteManagerHireRequest = async (req, res) => {
+  try {
+    // Extract propertyID from request body
+    const { propertyID } = req.body;
+
+    //Check if there is a ManagerHireRequest with the provided propertyID
+    const checkQuery = `SELECT * FROM ManagerHireRequest WHERE propertyID = $1 AND managerStatus = 'P';`;
+    const checkResult = await db.query(checkQuery, [propertyID]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(400).json({
+        success: "Manager hire request does not exist.",
+      });
+    }
+
+    //Check if there is a managerID in the Property table
+    const managerQuery = `SELECT managerID FROM Property WHERE id = $1;`;
+    const managerResult = await db.query(managerQuery, [propertyID]);
+
+    if (managerResult.rows[0].managerid != null) {
+      return res.status(400).json({
+        success: "Manager contract active, cannot delete.",
+      });
+    }
+
+    // Update the managerStatus to 'D' (Deleted) for the ManagerHireRequest with the provided propertyID
+    const updateQuery = `
+      UPDATE ManagerHireRequest
+      SET managerStatus = 'D'
+      WHERE propertyID = $1
+      AND managerStatus = 'P';
+    `;
+    await db.query(updateQuery, [propertyID]);
+
+    // Send success response
+    res.status(200).json({
+      success: "Manager hire request deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Error deleting manager hire request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete manager hire request.",
+    });
+  }
+};

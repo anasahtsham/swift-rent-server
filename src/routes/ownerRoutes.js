@@ -28,6 +28,10 @@ ownerRouter.post(
   hireController.generateHiringRequest
 );
 ownerRouter.post(
+  "/delete-hire-request",
+  hireController.deleteManagerHireRequest
+);
+ownerRouter.post(
   "/view-counter-requests",
   hireController.viewManagerHireCounterRequests
 );
