@@ -296,7 +296,6 @@ export const switchRole = async (req, res) => {
 // API 8: Check if the user is banned
 export const checkBan = async (req, res) => {
   const { userID } = req.body;
-  console.log("userid:" + userID);
   try {
     // Get the user information
     const user = await db.query(
