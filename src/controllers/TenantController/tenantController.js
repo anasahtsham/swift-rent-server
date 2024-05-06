@@ -314,7 +314,7 @@ export const listOfRentals = async (req, res) => {
       INNER JOIN Area A ON P.areaID = A.id
       INNER JOIN City C ON A.cityID = C.id
       INNER JOIN UserInformation uo ON P.ownerID = uo.id
-      LEFT JOIN UserInformation um ON pl.managerID = um.id
+      LEFT JOIN UserInformation um ON p.managerID = um.id
       WHERE pl.tenantID = $1 AND pl.leaseStatus = 'A'
       ORDER BY pl.leaseCreatedOn DESC;
     `;
@@ -323,6 +323,8 @@ export const listOfRentals = async (req, res) => {
     if (rows.length === 0) {
       return res.status(200).json({ message: "No active rentals found" });
     }
+
+    console.log(rows);
 
     // Format the response data
     const rentals = rows.map((row) => ({

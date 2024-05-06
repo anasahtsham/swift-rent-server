@@ -228,7 +228,7 @@ export const viewManagedProperties = async (req, res) => {
     const query = `
     SELECT
       P.id,
-      CONCAT(P.propertyAddress, ', ', AA.areaName, ', ', CC.cityName) AS propertyAddress,
+      CONCAT(P.propertyAddress, ', ', AA.areaName, ', ', CC.cityName) AS address,
       
       CONCAT(UIO.firstName, ' ', UIO.lastName) AS ownerName,
       CASE

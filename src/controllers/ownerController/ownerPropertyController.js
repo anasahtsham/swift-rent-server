@@ -256,9 +256,9 @@ export const fetchPropertyList = async (req, res) => {
         p.id,
         CONCAT(
           p.propertyAddress, ', ', a.areaName, ', ', c.cityName
-        ) AS address, 
-        t.firstName AS tenantName, 
-        m.firstName AS managerName, 
+        ) AS address,
+        CONCAT(t.firstName, ' ', t.lastName) AS tenantName,
+        CONCAT(m.firstName, ' ', m.lastName) AS managerName,
         p.propertyStatus
       FROM Property p
       JOIN Area a ON p.areaID = a.id
