@@ -12,4 +12,6 @@ tenantRouter.post("/lease-reject", tenantController.leaseReject);
 tenantRouter.post("/lease-accept", tenantController.acceptLease);
 tenantRouter.post("/list-of-rentals", tenantController.listOfRentals);
 
+// Total APIs: 5
+
 export default tenantRouter;

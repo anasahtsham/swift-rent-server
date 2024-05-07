@@ -14,6 +14,6 @@ commonRouter.post(
   commonController.CustomerSupportStatus
 );
 
-//Total commonRouter routes: 3
+// Total APIs: 4
 
 export default commonRouter;

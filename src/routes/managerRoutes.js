@@ -19,4 +19,6 @@ managerRouter.post(
   managerController.viewManagedProperties
 );
 
+// Total APIs: 6
+
 export default managerRouter;

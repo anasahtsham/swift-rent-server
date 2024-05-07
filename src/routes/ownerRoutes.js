@@ -49,6 +49,6 @@ ownerRouter.post(
 );
 ownerRouter.post("/fire-manager", hireController.fireManager);
 
-//Total ownerRouter routes: 7
+// Total APIs: 10
 
 export default ownerRouter;

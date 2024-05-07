@@ -37,6 +37,6 @@ adminRouter.get(
   analytics.getPropertyTypesPerCityAnalytics
 );
 
-//Total adminRouter routes: 23
+//Total adminRouter routes: 21
 
 export default adminRouter;
