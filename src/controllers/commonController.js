@@ -218,11 +218,17 @@ export const viewComplaints = async (req, res) => {
       SELECT c.id, c.complaintTitle, c.complaintDescription, 
         TO_CHAR(c.createdOn, 'DD-MM-YYYY HH24:MI') as createdOn, 
         TO_CHAR(c.complaintResolvedOn, 'DD-MM-YYYY HH24:MI') as complaintResolvedOn,  
-        c.complaintStatus, c.receiverRemark
+        c.complaintStatus, c.receiverRemark, 
+        CONCAT(u.firstName, ' ', u.lastName) as receiverName,
+        c.receiverType,
+        CONCAT(p.propertyAddress, ', ', a.areaName, ', ', ci.cityName) as fullAddress
       FROM Complaint c
       JOIN UserInformation u ON c.receiverID = u.id
+      JOIN Property p ON c.propertyID = p.id
+      JOIN Area a ON p.areaID = a.id
+      JOIN City ci ON a.cityID = ci.id
       WHERE c.senderID = $1 AND c.senderType = $2;
-    `;
+      `;
     const sentComplaintsResult = await db.query(sentComplaintsQuery, [
       userID,
       userType,
@@ -233,9 +239,15 @@ export const viewComplaints = async (req, res) => {
       SELECT c.id, c.complaintTitle, c.complaintDescription, 
         TO_CHAR(c.createdOn, 'DD-MM-YYYY HH24:MI') as createdOn, 
         TO_CHAR(c.complaintResolvedOn, 'DD-MM-YYYY HH24:MI') as complaintResolvedOn, 
-        c.complaintStatus, c.receiverRemark
+        c.complaintStatus, c.receiverRemark, 
+        CONCAT(u.firstName, ' ', u.lastName) as senderName,
+        c.senderType,
+        CONCAT(p.propertyAddress, ', ', a.areaName, ', ', ci.cityName) as fullAddress
       FROM Complaint c
       JOIN UserInformation u ON c.senderID = u.id
+      JOIN Property p ON c.propertyID = p.id
+      JOIN Area a ON p.areaID = a.id
+      JOIN City ci ON a.cityID = ci.id
       WHERE c.receiverID = $1 AND c.receiverType = $2;
     `;
     const receivedComplaintsResult = await db.query(receivedComplaintsQuery, [
