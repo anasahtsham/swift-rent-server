@@ -445,7 +445,7 @@ export const acceptCounterRequest = async (req, res) => {
 
     // Find the owner id from UserInformation table
     const ownerQuery = `
-        SELECT ui.id, ui.phone
+        SELECT ui.id
         FROM ManagerHireCounterRequest m
         JOIN ManagerHireRequest mr ON m.managerHireRequestID = mr.id
         JOIN Property p ON mr.propertyID = p.id
@@ -569,6 +569,137 @@ export const deleteManagerHireRequest = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete manager hire request.",
+    });
+  }
+};
+
+//API 7: Fire Manager
+export const fireManager = async (req, res) => {
+  try {
+    // Extract propertyID from request body
+    const { propertyID } = req.body;
+
+    // Find the managerID in the Property Table
+    const managerIDQuery = `
+      SELECT managerID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const managerIDResult = await db.query(managerIDQuery, [propertyID]);
+    const managerID = managerIDResult.rows[0].managerid;
+
+    // Check if managerID is null
+    if (
+      managerID === null ||
+      managerID === undefined ||
+      managerID === "" ||
+      managerID === " " ||
+      managerID === 0
+    ) {
+      return res.status(400).json({
+        success: "No manager assigned to this property.",
+      });
+    }
+
+    // Find the managerHireRequestID associated with the property
+    const managerHireRequestIDQuery = `
+      SELECT id
+      FROM ManagerHireRequest
+      WHERE propertyID = $1
+        AND managerStatus = 'A';
+    `;
+    const managerHireRequestIDResult = await db.query(
+      managerHireRequestIDQuery,
+      [propertyID]
+    );
+    const managerHireRequestID = managerHireRequestIDResult.rows[0].id;
+
+    // Update the managerStatus to 'T' in ManagerHireRequest table
+    const updateManagerStatusQuery = `
+      UPDATE ManagerHireRequest
+      SET managerStatus = 'T',
+          contractEndDate = CURRENT_DATE
+      WHERE id = $1;
+    `;
+    await db.query(updateManagerStatusQuery, [managerHireRequestID]);
+
+    // Set the managerID as null in Property table
+    const updatePropertyManagerIDQuery = `
+      UPDATE Property
+      SET managerID = NULL
+      WHERE id = $1;
+    `;
+    await db.query(updatePropertyManagerIDQuery, [propertyID]);
+
+    // Check if there is a tenantID in the property table
+    const tenantQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const tenantResult = await db.query(tenantQuery, [propertyID]);
+
+    // Find the owner id from UserInformation table
+    const ownerQuery = `
+      SELECT ui.id
+      FROM Property p
+      JOIN UserInformation ui ON p.ownerID = ui.id
+      WHERE p.id = $1;
+    `;
+    const ownerIDResult = await db.query(ownerQuery, [propertyID]);
+    const ownerID = ownerIDResult.rows[0].id;
+
+    // Get the property address
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
+    // Send notification to the tenant if exists
+    if (tenantResult.rows[0].tenantid !== null) {
+      const tenantID = tenantResult.rows[0].tenantid;
+
+      // Send notification to the tenant
+      const tenantNotificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+        VALUES (
+          $1, 'T',
+          $2, 'O',
+          'The manager for your rental ${propertyAddress} has been fired. You will now be submitting your rent to the owner.', 
+          'R'
+        );
+      `;
+      await db.query(tenantNotificationQuery, [tenantID, ownerID]);
+    }
+
+    // Send notification to the manager
+    const managerNotificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES (
+        $1, 'M',
+        $2, 'O',
+        'The owner has fired you from managing the property ${propertyAddress}.', 
+        'R'
+      );
+    `;
+    await db.query(managerNotificationQuery, [managerID, ownerID]);
+
+    // Send success response
+    res.status(200).json({
+      success: "Manager fired successfully.",
+    });
+  } catch (error) {
+    console.error("Error firing manager:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fire manager.",
     });
   }
 };

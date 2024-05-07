@@ -47,6 +47,7 @@ ownerRouter.post(
   "/accept-counter-request",
   hireController.acceptCounterRequest
 );
+ownerRouter.post("/fire-manager", hireController.fireManager);
 
 //Total ownerRouter routes: 7
 
