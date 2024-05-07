@@ -300,7 +300,7 @@ export const registerTenant = async (req, res) => {
   try {
     // Check if the phone number is of a tenant, see if isTenant is true
     const isTenantQuery = await db.query(
-      `SELECT isTenant FROM UserInformation WHERE phone = $1`,
+      `SELECT isTenant, id FROM UserInformation WHERE phone = $1`,
       [phone]
     );
 
@@ -331,7 +331,8 @@ export const registerTenant = async (req, res) => {
       `SELECT 
         CONCAT(
           p.propertyAddress, ', ', a.areaName, ', ', c.cityName
-        ) AS address
+        ) AS address,
+        p.ownerID
       FROM Property p
       JOIN Area a ON p.areaID = a.id
       JOIN City c ON a.cityID = c.id
@@ -343,7 +344,16 @@ export const registerTenant = async (req, res) => {
       return res.status(404).json({ error: "Property not found" });
     }
 
-    const { address } = propertyQuery.rows[0];
+    const { address, ownerid } = propertyQuery.rows[0];
+
+    //Check if tenantID is same as the ownerID on the property
+    if (isTenantQuery.rows.length > 0) {
+      if (isTenantQuery.rows[0].id === ownerid) {
+        return res.status(400).json({
+          error: "Cannot register owner as a tenant on his property!",
+        });
+      }
+    }
 
     // Find the tenantID using the provided phone number
     const tenantQuery = await db.query(
@@ -372,7 +382,7 @@ export const registerTenant = async (req, res) => {
     // Insert data into the property lease table
     await db.query(
       `INSERT INTO PropertyLease (
-        propertyID, tenantID, registeredByType, registeredByID, managerID, leaseStatus,
+        propertyID, tenantID, registeredByType, registeredByID, leaseStatus,
         incrementPercentage, incrementPeriod, rent, securityDeposit, advancePayment,
         advancePaymentForMonths, dueDate, fine, leasedForMonths
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,

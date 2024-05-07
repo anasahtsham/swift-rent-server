@@ -135,7 +135,6 @@ export const rejectComplaint = async (req, res) => {
       S: "Solved",
       R: "Rejected",
     };
-    console.log(complaint.complaintstatus);
 
     //Check if the complaint is pending
     if (complaint.complaintstatus !== "P") {

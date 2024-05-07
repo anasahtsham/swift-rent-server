@@ -227,8 +227,9 @@ export const viewComplaints = async (req, res) => {
       JOIN Property p ON c.propertyID = p.id
       JOIN Area a ON p.areaID = a.id
       JOIN City ci ON a.cityID = ci.id
-      WHERE c.senderID = $1 AND c.senderType = $2;
-      `;
+      WHERE c.senderID = $1 AND c.senderType = $2
+      ORDER BY c.complaintStatus DESC, c.createdOn DESC;
+    `;
     const sentComplaintsResult = await db.query(sentComplaintsQuery, [
       userID,
       userType,
@@ -248,7 +249,8 @@ export const viewComplaints = async (req, res) => {
       JOIN Property p ON c.propertyID = p.id
       JOIN Area a ON p.areaID = a.id
       JOIN City ci ON a.cityID = ci.id
-      WHERE c.receiverID = $1 AND c.receiverType = $2;
+      WHERE c.receiverID = $1 AND c.receiverType = $2
+      ORDER BY c.complaintStatus DESC, c.createdOn DESC;
     `;
     const receivedComplaintsResult = await db.query(receivedComplaintsQuery, [
       userID,
@@ -275,7 +277,7 @@ export const respondToComplaint = async (req, res) => {
     // Update complaint table with remark text and complaintStatus
     const updateComplaintQuery = `
       UPDATE Complaint
-      SET complaintStatus = 'A', receiverRemark = $1
+      SET complaintStatus = 'A', receiverRemark = $1, complaintResolvedOn = CURRENT_TIMESTAMP
       WHERE id = $2;
     `;
     await db.query(updateComplaintQuery, [remarkText, complaintID]);
