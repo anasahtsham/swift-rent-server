@@ -208,11 +208,10 @@ export const registerComplaint = async (req, res) => {
   }
 };
 
-//View Complaints
+// API 6: View Complaints
 export const viewComplaints = async (req, res) => {
   try {
     const { userID, userType } = req.body;
-    console.log(req.body);
 
     // Query for sent complaints
     const sentComplaintsQuery = `
@@ -253,5 +252,29 @@ export const viewComplaints = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to view complaints." });
+  }
+};
+
+//API 7: Respond to Complaint
+export const respondToComplaint = async (req, res) => {
+  try {
+    const { complaintID, remarkText } = req.body;
+
+    // Update complaint table with remark text and complaintStatus
+    const updateComplaintQuery = `
+      UPDATE Complaint
+      SET complaintStatus = 'A', receiverRemark = $1
+      WHERE id = $2;
+    `;
+    await db.query(updateComplaintQuery, [remarkText, complaintID]);
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Complaint acknowledged successfully." });
+  } catch (error) {
+    console.error("Error acknowledging complaint:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to acknowledge complaint." });
   }
 };
