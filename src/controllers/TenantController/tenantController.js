@@ -324,8 +324,6 @@ export const listOfRentals = async (req, res) => {
       return res.status(200).json({ message: "No active rentals found" });
     }
 
-    console.log(rows);
-
     // Format the response data
     const rentals = rows.map((row) => ({
       id: row.propertyid,
