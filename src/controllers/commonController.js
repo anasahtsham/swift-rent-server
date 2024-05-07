@@ -134,3 +134,76 @@ export const CustomerSupportStatus = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// API 5: Register Complaint
+export const registerComplaint = async (req, res) => {
+  try {
+    const { propertyID, userID, userType, sentToType, title, description } =
+      req.body;
+
+    console.log(req.body);
+
+    // Check if the sentToType exists on the property
+    let receiverID;
+    let receiverType;
+    if (sentToType === "M" || sentToType === "T") {
+      const receiverIDQuery = `
+        SELECT managerID, tenantID
+        FROM Property
+        WHERE id = $1;
+      `;
+      const receiverIDResult = await db.query(receiverIDQuery, [propertyID]);
+      if (sentToType === "M") {
+        receiverID = receiverIDResult.rows[0].managerid;
+      } else if (sentToType === "T") {
+        receiverID = receiverIDResult.rows[0].tenantid;
+      }
+      receiverType = sentToType;
+    } else if (sentToType === "O") {
+      const ownerIDQuery = `
+        SELECT ownerID
+        FROM Property
+        WHERE id = $1;
+      `;
+      const ownerIDResult = await db.query(ownerIDQuery, [propertyID]);
+      receiverID = ownerIDResult.rows[0].ownerid;
+      receiverType = "O";
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid sentToType." });
+    }
+    receiverType = sentToType;
+
+    // Set the title, description, and complaintStatus
+    const insertComplaintQuery = `
+      INSERT INTO Complaint (propertyID, receiverID, receiverType, senderID, senderType, complaintTitle, complaintDescription, complaintStatus)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'P')
+      RETURNING id;
+    `;
+    const { rows } = await db.query(insertComplaintQuery, [
+      propertyID,
+      receiverID,
+      receiverType,
+      userID,
+      userType,
+      title,
+      description,
+    ]);
+
+    if (rows.length === 1) {
+      return res
+        .status(201)
+        .json({ success: true, message: "Complaint sent successfully." });
+    } else {
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to send complaint." });
+    }
+  } catch (error) {
+    console.error("Error sending complaint:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send complaint." });
+  }
+};
