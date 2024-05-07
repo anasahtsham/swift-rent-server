@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import morgan from "./src/helpers/loggerhelper.js";
-import { dirname } from "path";
 import { fileURLToPath } from "url";
 import applyRoutes from "./src/routes/index.js";
 import path from "path";
