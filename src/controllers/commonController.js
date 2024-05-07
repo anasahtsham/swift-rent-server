@@ -62,7 +62,7 @@ export const getUserNotifications = async (req, res) => {
     // Query to retrieve user notifications
     const notificationsQuery = `
       SELECT UN.id, 
-             TO_CHAR(UN.sentOn, 'MM/DD/YYYY') AS dateAndYear, 
+             TO_CHAR(UN.sentOn, 'DD-MM-YYYY') AS dateAndYear, 
              TO_CHAR(UN.sentOn, 'HH24:MI') AS time, 
              CONCAT(UI.firstName, ' ', UI.lastName) AS senderName, 
              UN.senderType, 
@@ -205,5 +205,53 @@ export const registerComplaint = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to send complaint." });
+  }
+};
+
+//View Complaints
+export const viewComplaints = async (req, res) => {
+  try {
+    const { userID, userType } = req.body;
+    console.log(req.body);
+
+    // Query for sent complaints
+    const sentComplaintsQuery = `
+      SELECT c.id, c.complaintTitle, c.complaintDescription, 
+        TO_CHAR(c.createdOn, 'DD-MM-YYYY HH24:MI') as createdOn, 
+        TO_CHAR(c.complaintResolvedOn, 'DD-MM-YYYY HH24:MI') as complaintResolvedOn,  
+        c.complaintStatus, c.receiverRemark
+      FROM Complaint c
+      JOIN UserInformation u ON c.receiverID = u.id
+      WHERE c.senderID = $1 AND c.senderType = $2;
+    `;
+    const sentComplaintsResult = await db.query(sentComplaintsQuery, [
+      userID,
+      userType,
+    ]);
+
+    // Query for received complaints
+    const receivedComplaintsQuery = `
+      SELECT c.id, c.complaintTitle, c.complaintDescription, 
+        TO_CHAR(c.createdOn, 'DD-MM-YYYY HH24:MI') as createdOn, 
+        TO_CHAR(c.complaintResolvedOn, 'DD-MM-YYYY HH24:MI') as complaintResolvedOn, 
+        c.complaintStatus, c.receiverRemark
+      FROM Complaint c
+      JOIN UserInformation u ON c.senderID = u.id
+      WHERE c.receiverID = $1 AND c.receiverType = $2;
+    `;
+    const receivedComplaintsResult = await db.query(receivedComplaintsQuery, [
+      userID,
+      userType,
+    ]);
+
+    return res.status(200).json({
+      sentComplaints: sentComplaintsResult.rows,
+      receivedComplaints: receivedComplaintsResult.rows,
+    });
+  } catch (error) {
+    console.error("Error viewing complaints:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to view complaints." });
   }
 };

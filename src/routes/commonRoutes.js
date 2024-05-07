@@ -15,7 +15,8 @@ commonRouter.post(
 );
 //registerComplaint
 commonRouter.post("/register-complaint", commonController.registerComplaint);
-
+//viewComplaints
+commonRouter.post("/view-complaints", commonController.viewComplaints);
 // Total APIs: 5
 
 export default commonRouter;
