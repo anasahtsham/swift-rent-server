@@ -191,20 +191,44 @@ export const registerComplaint = async (req, res) => {
       description,
     ]);
 
+    // Notification to the receiver from the sender
+    // Get the property address
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+    // Send notification to the tenant
+    const tenantNotificationQuery = `
+    INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES (
+        $1, $2,
+        $3, $4,
+        'You have received a new complaint for the property at ${propertyAddress}.', 
+        'C'
+      );
+    `;
+    await db.query(tenantNotificationQuery, [
+      receiverID,
+      receiverType,
+      userID,
+      userType,
+    ]);
+
     if (rows.length === 1) {
-      return res
-        .status(201)
-        .json({ success: true, message: "Complaint sent successfully." });
+      return res.status(201).json({ success: "Complaint sent successfully." });
     } else {
-      return res
-        .status(500)
-        .json({ success: false, message: "Failed to send complaint." });
+      return res.status(500).json({ success: "Failed to send complaint." });
     }
   } catch (error) {
     console.error("Error sending complaint:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to send complaint." });
+    return res.status(500).json({ success: "Failed to send complaint." });
   }
 };
 
@@ -263,9 +287,7 @@ export const viewComplaints = async (req, res) => {
     });
   } catch (error) {
     console.error("Error viewing complaints:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to view complaints." });
+    return res.status(500).json({ success: "Failed to view complaints." });
   }
 };
 
@@ -282,13 +304,57 @@ export const respondToComplaint = async (req, res) => {
     `;
     await db.query(updateComplaintQuery, [remarkText, complaintID]);
 
+    //Get the senderID and senderType and receiverID and receiverType from complaintID
+    const getComplaintDetailsQuery = `
+      SELECT senderID, senderType, receiverID, receiverType, propertyID
+      FROM Complaint
+      WHERE id = $1;
+    `;
+    const complaintDetailsResult = await db.query(getComplaintDetailsQuery, [
+      complaintID,
+    ]);
+    const senderID = complaintDetailsResult.rows[0].senderid;
+    const senderType = complaintDetailsResult.rows[0].sendertype;
+    const receiverID = complaintDetailsResult.rows[0].receiverid;
+    const receiverType = complaintDetailsResult.rows[0].receivertype;
+
+    //Notification to the sender from the receiver
+    // Get the property address
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+    // Send notification to the tenant
+    const tenantNotificationQuery = `
+    INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES (
+        $1, $2,
+        $3, $4,
+        'Your complaint for the property at ${propertyAddress} has been acknowledged.', 
+        'C'
+      );
+    `;
+    await db.query(tenantNotificationQuery, [
+      senderID,
+      senderType,
+      receiverID,
+      receiverType,
+    ]);
+
     return res
       .status(200)
-      .json({ success: true, message: "Complaint acknowledged successfully." });
+      .json({ success: "Complaint acknowledged successfully." });
   } catch (error) {
     console.error("Error acknowledging complaint:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to acknowledge complaint." });
+      .json({ success: "Failed to acknowledge complaint." });
   }
 };
