@@ -123,6 +123,21 @@ export const leaseReject = async (req, res) => {
     `;
     await db.query(updateLeaseQuery, [reasonForRejection, leaseID]);
 
+    // Get propertyID from the lease
+    const propertyID = rows[0].propertyid;
+
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
     // Create a notification for the registrar
     const createNotificationQuery = `
       INSERT INTO UserNotification (userID, userType, senderType, senderID, notificationText, notificationType)
