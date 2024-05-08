@@ -296,14 +296,6 @@ export const respondToComplaint = async (req, res) => {
   try {
     const { complaintID, remarkText } = req.body;
 
-    // Update complaint table with remark text and complaintStatus
-    const updateComplaintQuery = `
-      UPDATE Complaint
-      SET complaintStatus = 'A', receiverRemark = $1, complaintResolvedOn = CURRENT_TIMESTAMP
-      WHERE id = $2;
-    `;
-    await db.query(updateComplaintQuery, [remarkText, complaintID]);
-
     //Get the senderID and senderType and receiverID and receiverType from complaintID
     const getComplaintDetailsQuery = `
       SELECT senderID, senderType, receiverID, receiverType, propertyID
@@ -317,6 +309,9 @@ export const respondToComplaint = async (req, res) => {
     const senderType = complaintDetailsResult.rows[0].sendertype;
     const receiverID = complaintDetailsResult.rows[0].receiverid;
     const receiverType = complaintDetailsResult.rows[0].receivertype;
+
+    // Get the propertyID
+    const propertyID = complaintDetailsResult.rows[0].propertyid;
 
     //Notification to the sender from the receiver
     // Get the property address
@@ -347,6 +342,14 @@ export const respondToComplaint = async (req, res) => {
       receiverID,
       receiverType,
     ]);
+
+    // Update complaint table with remark text and complaintStatus
+    const updateComplaintQuery = `
+        UPDATE Complaint
+        SET complaintStatus = 'A', receiverRemark = $1, complaintResolvedOn = CURRENT_TIMESTAMP
+        WHERE id = $2;
+      `;
+    await db.query(updateComplaintQuery, [remarkText, complaintID]);
 
     return res
       .status(200)

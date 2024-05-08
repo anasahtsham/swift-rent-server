@@ -132,7 +132,10 @@ export const leaseReject = async (req, res) => {
       rows[0].registeredbyid,
       rows[0].registeredbytype,
       rows[0].tenantid,
-      "Tenant has rejected lease for the reason: " + reasonForRejection,
+      "Tenant has rejected lease for the property " +
+        propertyAddress +
+        " due to the reason: " +
+        reasonForRejection,
     ]);
 
     // Send success response
