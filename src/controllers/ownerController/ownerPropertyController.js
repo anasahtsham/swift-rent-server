@@ -429,3 +429,163 @@ export const registerTenant = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+//API 5: Terminate Lease Agreement
+export const terminateTenant = async (req, res) => {
+  try {
+    const { ownerID, propertyID, moneyReturned, terminationReason } = req.body;
+    console.log(req.body);
+
+    // Money returned should be equal or greater than 0
+    if (moneyReturned < 0) {
+      return res.status(400).json({
+        success: "Money returned cannot be less than 0.",
+      });
+    }
+
+    // Check if there is a tenant for the property
+    const propertyQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const propertyResult = await db.query(propertyQuery, [propertyID]);
+    const tenantID = propertyResult.rows[0].tenantid;
+
+    if (!tenantID) {
+      return res.status(400).json({
+        success: "Cannot terminate lease. No tenant found for the property.",
+      });
+    }
+
+    // Check if there are pending or to collect rent notices for the tenant
+    const rentNoticeQuery = `
+      SELECT id, paymentStatus
+      FROM TenantRentNotice
+      WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+      AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+      AND paymentStatus = 'V' AND propertyID = $2
+      ORDER BY createdOn DESC;
+    `;
+    const rentNoticeResult = await db.query(rentNoticeQuery, [
+      tenantID,
+      propertyID,
+    ]);
+
+    if (rentNoticeResult.rows.length > 0) {
+      console.log(rentNoticeResult.rows);
+      // There are pending or to collect rent notices, cannot terminate lease
+      return res.status(400).json({
+        success: "Cannot terminate lease. Pending rent notices exist.",
+      });
+    }
+
+    // Get PropertyLease ID from PropertyLease table using propertyID and tenantID and propertyStatus = 'A'
+    const propertyLeaseIDQuery = `
+      SELECT id
+      FROM PropertyLease
+      WHERE propertyID = $1 AND tenantID = $2 AND leaseStatus = 'A';
+    `;
+    const propertyLeaseIDResult = await db.query(propertyLeaseIDQuery, [
+      propertyID,
+      tenantID,
+    ]);
+    const propertyLeaseID = propertyLeaseIDResult.rows[0].id;
+
+    // Create TerminateLease entry
+    const createTerminateLeaseQuery = `
+      INSERT INTO TerminateLease (propertyLeaseID, terminationGeneratedBy, terminationDate, moneyReturned, terminationReason)
+      VALUES (
+        $1,
+        'O',
+        CURRENT_TIMESTAMP,
+        $2,
+        $3
+      );
+    `;
+    await db.query(createTerminateLeaseQuery, [
+      propertyLeaseID,
+      moneyReturned,
+      terminationReason,
+    ]);
+
+    // Update TenantRentNotice table
+    const updateRentNoticeQuery = `
+        UPDATE TenantRentNotice
+        SET paymentStatus = 'S'
+        WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+        AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+        AND (paymentStatus = 'P' OR paymentStatus = 'T') AND propertyID = $2;
+      `;
+    await db.query(updateRentNoticeQuery, [tenantID, propertyID]);
+
+    // Update Property table
+    const updatePropertyQuery = `
+        UPDATE Property
+        SET tenantID = NULL, propertyStatus = 'V'
+        WHERE id = $1;
+      `;
+    await db.query(updatePropertyQuery, [propertyID]);
+
+    // Update PropertyLease table
+    const updateLeaseQuery = `
+        UPDATE PropertyLease
+        SET leaseStatus = 'T'
+        WHERE propertyID = $1 AND tenantID = $2 AND leaseStatus = 'A';
+      `;
+    await db.query(updateLeaseQuery, [propertyID, tenantID]);
+
+    // Get full property address from property, area and city table
+    const propertyAddressQuery = `
+      SELECT CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address
+      FROM Property p
+      JOIN Area a ON p.areaID = a.id
+      JOIN City c ON a.cityID = c.id
+      WHERE p.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
+    // Send notifications
+    const notificationMessageTenant = `Your lease for property ${propertyAddress} has been terminated. Reason: ${terminationReason}`;
+    const notificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, 'T', $2, 'O', $3, 'L');
+    `;
+    await db.query(notificationQuery, [
+      tenantID,
+      ownerID,
+      notificationMessageTenant,
+    ]);
+
+    // Send notification to manager, if present
+    const managerIDQuery = `
+      SELECT managerID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const managerIDResult = await db.query(managerIDQuery, [propertyID]);
+    const managerID = managerIDResult.rows[0].managerid;
+
+    const notificationMessageManager = `Lease for property ${propertyAddress} has been terminated for the tenant. Reason: ${terminationReason}`;
+
+    if (managerID) {
+      await db.query(notificationQuery, [
+        managerID,
+        ownerID,
+        notificationMessageManager,
+      ]);
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Lease terminated successfully." });
+  } catch (error) {
+    console.error("Error terminating lease:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to terminate lease." });
+  }
+};

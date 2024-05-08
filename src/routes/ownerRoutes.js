@@ -9,6 +9,7 @@ ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
 ownerRouter.post("/fetch-property-list", ownerController.fetchPropertyList);
 ownerRouter.post("/register-tenant", ownerController.registerTenant);
+ownerRouter.post("/terminate-tenant", ownerController.terminateTenant);
 //Maintenance
 ownerRouter.post(
   "/generate-maintenance-report",
