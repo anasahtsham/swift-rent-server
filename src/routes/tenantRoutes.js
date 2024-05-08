@@ -13,6 +13,15 @@ tenantRouter.post("/lease-reject", tenantController.leaseReject);
 tenantRouter.post("/lease-accept", tenantController.acceptLease);
 tenantRouter.post("/list-of-rentals", tenantController.listOfRentals);
 //Rent Submissions
+//submitVerificationRequest
+tenantRouter.post(
+  "/submit-verification-request",
+  rentConteoller.submitVerificationRequest
+);
+tenantRouter.post(
+  "/submit-collection-request",
+  rentConteoller.submitCollectionRequest
+);
 
 // Total APIs: 5
 
