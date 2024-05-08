@@ -172,3 +172,91 @@ export const collectRent = async (req, res) => {
     return res.status(500).json({ success: "Failed to collect rent." });
   }
 };
+
+// API 3: Online Verification Request
+export const submitManagerVerificationRequest = async (req, res) => {
+  try {
+    const { managerID, propertyID, verificationMessage } = req.body;
+
+    // Find ownerID
+    const ownerIDQuery = `
+      SELECT ownerID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const ownerIDResult = await db.query(ownerIDQuery, [propertyID]);
+    const ownerID = ownerIDResult.rows[0].ownerid;
+
+    // Send notification to owner
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
+    const notificationMessage = `Manager is requesting online rent verification for property ${propertyAddress}.`;
+
+    // Find last TenantRentNotice for the property
+    const lastRentNoticeQuery = `
+      SELECT TRN.id AS rentNoticeID
+      FROM TenantRentNotice TRN
+      JOIN ManagerRentCollection MRC ON TRN.id = MRC.tenantRentNoticeID
+      WHERE TRN.propertyID = $1 AND EXTRACT(MONTH FROM TRN.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+      AND EXTRACT(YEAR FROM TRN.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP) AND TRN.paymentStatus = 'C'
+      ORDER BY TRN.createdOn DESC
+      LIMIT 1;
+    `;
+    const lastRentNoticeResult = await db.query(lastRentNoticeQuery, [
+      propertyID,
+    ]);
+
+    if (lastRentNoticeResult.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No rent to verify." });
+    }
+
+    const rentNoticeID = lastRentNoticeResult.rows[0].rentNoticeID;
+
+    // Update ManagerRentCollection table
+    const updateManagerCollectionQuery = `
+      UPDATE ManagerRentCollection
+      SET verificationMessage = $1, paymentType = 'O', paymentOn = CURRENT_TIMESTAMP, paymentStatus = 'V'
+      WHERE tenantRentNoticeID = $2;
+    `;
+    await db.query(updateManagerCollectionQuery, [
+      verificationMessage,
+      rentNoticeID,
+    ]);
+
+    const notificationQuery = `
+    INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+    VALUES ($1, 'O', $2, 'M', $3, 'R');
+  `;
+    await db.query(notificationQuery, [
+      ownerID,
+      managerID,
+      notificationMessage,
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Online verification request submitted successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Error submitting online verification request by manager:",
+      error
+    );
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit online verification request by manager.",
+    });
+  }
+};
