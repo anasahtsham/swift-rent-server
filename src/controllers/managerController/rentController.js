@@ -68,8 +68,8 @@ export const verifyOnlineRent = async (req, res) => {
 
     // Create ManagerRentCollection entry
     const createCollectionQuery = `
-        INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentType, paymentOn, paymentStatus)
-        VALUES ($1, $2, $3, $4, $5, 'O', CURRENT_TIMESTAMP, 'P');
+        INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentStatus)
+        VALUES ($1, $2, $3, $4, $5, 'P');
       `;
     await db.query(createCollectionQuery, [
       rentNoticeID,
@@ -147,8 +147,8 @@ export const collectRent = async (req, res) => {
 
     // Create ManagerRentCollection entry
     const createCollectionQuery = `
-        INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentType, paymentOn, paymentStatus)
-        VALUES ($1, $2, $3, $4, $5, 'C', CURRENT_TIMESTAMP, 'P');
+    INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentStatus)
+    VALUES ($1, $2, $3, $4, $5, 'P');
       `;
     await db.query(createCollectionQuery, [
       rentNoticeID,
