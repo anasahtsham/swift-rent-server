@@ -21,17 +21,37 @@ export const verifyOnlineRent = async (req, res) => {
           FROM TenantRentNotice
           WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
           AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-          AND paymentStatus = 'C'
+          AND paymentStatus = 'C' AND propertyID = $2
           ORDER BY createdOn DESC
           LIMIT 1;
         `;
-      const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
+      const rentNoticeResult = await db.query(rentNoticeQuery, [
+        tenantID,
+        propertyID,
+      ]);
 
       if (rentNoticeResult.rows.length === 0) {
-        return res.status(400).json({ error: "No rent to verify." });
+        return res.status(400).json({ success: "No rent to verify." });
       }
 
       const rentNoticeID = rentNoticeResult.rows[0].id;
+
+      // Check if rent has already been verified
+      const checkCollectionQuery = `
+          SELECT paymentStatus
+          FROM ManagerRentCollection
+          WHERE tenantRentNoticeID = $1
+          AND paymentStatus = 'C';
+        `;
+      const checkCollectionResult = await db.query(checkCollectionQuery, [
+        rentNoticeID,
+      ]);
+
+      if (checkCollectionResult.rows.length > 0) {
+        return res
+          .status(400)
+          .json({ success: "Rent has already been verified." });
+      }
 
       // Update ManagerRentCollection
       const updateCollectionQuery = `
@@ -62,18 +82,22 @@ export const verifyOnlineRent = async (req, res) => {
     } else {
       // If property is not managed, verify rent directly
       const rentNoticeQuery = `
-          SELECT id
+          SELECT id, paymentStatus
           FROM TenantRentNotice
           WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
           AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-          AND paymentStatus = 'C'
+          AND paymentStatus = 'V' AND propertyID = $2
           ORDER BY createdOn DESC
           LIMIT 1;
         `;
-      const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
+      const rentNoticeResult = await db.query(rentNoticeQuery, [
+        tenantID,
+        propertyID,
+      ]);
+      console.log(rentNoticeResult.rows);
 
       if (rentNoticeResult.rows.length === 0) {
-        return res.status(400).json({ error: "No rent to verify." });
+        return res.status(400).json({ success: "Error in verifying rent." });
       }
 
       const rentNoticeID = rentNoticeResult.rows[0].id;
@@ -132,24 +156,40 @@ export const collectRent = async (req, res) => {
           FROM TenantRentNotice
           WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
           AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-          AND paymentStatus = 'C'
+          AND paymentStatus = 'C' AND propertyID = $2
           ORDER BY createdOn DESC
           LIMIT 1;
         `;
-      const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
-
-      if (rentNoticeResult.rows.length === 0) {
-        return res.status(400).json({ error: "No rent to collect." });
-      }
+      const rentNoticeResult = await db.query(rentNoticeQuery, [
+        tenantID,
+        propertyID,
+      ]);
 
       const rentNoticeID = rentNoticeResult.rows[0].id;
 
+      // Check if rent has already been verified
+      const checkCollectionQuery = `
+        SELECT paymentStatus
+        FROM ManagerRentCollection
+        WHERE tenantRentNoticeID = $1
+        AND paymentStatus = 'C';
+      `;
+      const checkCollectionResult = await db.query(checkCollectionQuery, [
+        rentNoticeID,
+      ]);
+
+      if (checkCollectionResult.rows.length > 0) {
+        return res
+          .status(400)
+          .json({ success: "Rent has already been collected." });
+      }
+
       // Update ManagerRentCollection
       const updateCollectionQuery = `
-          UPDATE ManagerRentCollection
-          SET paymentStatus = 'C', paymentType = 'C', paymentOn = CURRENT_TIMESTAMP
-          WHERE tenantRentNoticeID = $1;
-        `;
+        UPDATE ManagerRentCollection
+        SET paymentStatus = 'C', paymentType = 'C', paymentOn = CURRENT_TIMESTAMP
+        WHERE tenantRentNoticeID = $1;
+      `;
       await db.query(updateCollectionQuery, [rentNoticeID]);
 
       // Create OwnerRentTransaction
@@ -164,8 +204,8 @@ export const collectRent = async (req, res) => {
       ]);
 
       // Send notifications
-      const ownerNotificationText = `Rent for your property has been collected.`;
-      await sendNotification(ownerID, "O", ownerNotificationText, "R");
+      // const ownerNotificationText = `Rent for your property has been collected.`;
+      // await sendNotification(ownerID, "O", ownerNotificationText, "R");
 
       return res.status(200).json({ success: "Rent collected successfully." });
     } else {
@@ -175,14 +215,17 @@ export const collectRent = async (req, res) => {
           FROM TenantRentNotice
           WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
           AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-          AND paymentStatus = 'T'
+          AND paymentStatus = 'T' AND propertyID = $2
           ORDER BY createdOn DESC
           LIMIT 1;
         `;
-      const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
+      const rentNoticeResult = await db.query(rentNoticeQuery, [
+        tenantID,
+        propertyID,
+      ]);
 
       if (rentNoticeResult.rows.length === 0) {
-        return res.status(400).json({ error: "No rent to collect." });
+        return res.status(400).json({ success: "Error in collecting rent" });
       }
 
       const rentNoticeID = rentNoticeResult.rows[0].id;
@@ -207,8 +250,8 @@ export const collectRent = async (req, res) => {
       ]);
 
       // Send notifications
-      const ownerNotificationText = `Rent for your property has been collected.`;
-      await sendNotification(ownerID, "O", ownerNotificationText, "R");
+      // const ownerNotificationText = `Rent for your property has been collected.`;
+      // await sendNotification(ownerID, "O", ownerNotificationText, "R");
 
       return res.status(200).json({ success: "Rent collected successfully." });
     }

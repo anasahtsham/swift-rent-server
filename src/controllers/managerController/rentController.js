@@ -20,11 +20,14 @@ export const verifyOnlineRent = async (req, res) => {
         FROM TenantRentNotice
         WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
         AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-        AND paymentStatus = 'V'
+        AND paymentStatus = 'V' AND propertyID = $2
         ORDER BY createdOn DESC
         LIMIT 1;
       `;
-    const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
+    const rentNoticeResult = await db.query(rentNoticeQuery, [
+      tenantID,
+      propertyID,
+    ]);
 
     // If no online rent to verify
     if (rentNoticeResult.rows.length === 0) {
@@ -108,11 +111,14 @@ export const collectRent = async (req, res) => {
         FROM TenantRentNotice
         WHERE tenantID = $1 AND EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
         AND EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-        AND paymentStatus = 'T'
+        AND paymentStatus = 'T' AND propertyID = $2
         ORDER BY createdOn DESC
         LIMIT 1;
       `;
-    const rentNoticeResult = await db.query(rentNoticeQuery, [tenantID]);
+    const rentNoticeResult = await db.query(rentNoticeQuery, [
+      tenantID,
+      propertyID,
+    ]);
 
     if (rentNoticeResult.rows.length === 0) {
       return res.status(400).json({ success: "No rent to collect." });
@@ -207,8 +213,10 @@ export const submitManagerVerificationRequest = async (req, res) => {
       SELECT TRN.id AS rentNoticeID
       FROM TenantRentNotice TRN
       JOIN ManagerRentCollection MRC ON TRN.id = MRC.tenantRentNoticeID
-      WHERE TRN.propertyID = $1 AND EXTRACT(MONTH FROM TRN.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
-      AND EXTRACT(YEAR FROM TRN.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP) AND TRN.paymentStatus = 'C'
+      WHERE TRN.propertyID = $1 
+      AND EXTRACT(MONTH FROM TRN.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+      AND EXTRACT(YEAR FROM TRN.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP) 
+      AND TRN.paymentStatus = 'C'
       ORDER BY TRN.createdOn DESC
       LIMIT 1;
     `;
@@ -216,13 +224,34 @@ export const submitManagerVerificationRequest = async (req, res) => {
       propertyID,
     ]);
 
+    const rentNoticeID = lastRentNoticeResult.rows[0].rentnoticeid;
+    console.log(rentNoticeID);
+
     if (lastRentNoticeResult.rows.length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "No rent to verify." });
     }
 
-    const rentNoticeID = lastRentNoticeResult.rows[0].rentNoticeID;
+    // Check if manager has already submitted a request
+    const checkRequestQuery = `
+      SELECT *
+      FROM ManagerRentCollection
+      WHERE tenantRentNoticeID = $1
+      AND (paymentStatus = 'V' OR paymentStatus = 'C');
+    `;
+    const checkRequestResult = await db.query(checkRequestQuery, [
+      rentNoticeID,
+    ]);
+
+    console.log(checkRequestResult.rows);
+    console.log(checkRequestResult.rows.length);
+
+    if (checkRequestResult.rows.length > 0) {
+      return res.status(400).json({
+        success: "Manager has already submitted a request.",
+      });
+    }
 
     // Update ManagerRentCollection table
     const updateManagerCollectionQuery = `
@@ -246,8 +275,7 @@ export const submitManagerVerificationRequest = async (req, res) => {
     ]);
 
     return res.status(200).json({
-      success: true,
-      message: "Online verification request submitted successfully.",
+      success: "Online verification request submitted successfully.",
     });
   } catch (error) {
     console.error(
@@ -255,8 +283,7 @@ export const submitManagerVerificationRequest = async (req, res) => {
       error
     );
     return res.status(500).json({
-      success: false,
-      message: "Failed to submit online verification request by manager.",
+      success: "Failed to submit online verification request by manager.",
     });
   }
 };

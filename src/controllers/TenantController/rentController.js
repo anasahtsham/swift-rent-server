@@ -64,6 +64,14 @@ export const submitVerificationRequest = async (req, res) => {
     const lastRentNoticeResult = await db.query(lastRentNoticeQuery, [
       tenantID,
     ]);
+
+    //Check for rows
+    if (lastRentNoticeResult.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ success: "Cannot send verification request" });
+    }
+
     const lastRentNoticeID = lastRentNoticeResult.rows[0].id;
 
     // Update TenantRentNotice table
@@ -166,6 +174,12 @@ export const submitCollectionRequest = async (req, res) => {
     const lastRentNoticeResult = await db.query(lastRentNoticeQuery, [
       tenantID,
     ]);
+    //Check for rows
+    if (lastRentNoticeResult.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ success: "Cannot send collection request." });
+    }
     const lastRentNoticeID = lastRentNoticeResult.rows[0].id;
 
     // Update TenantRentNotice table
