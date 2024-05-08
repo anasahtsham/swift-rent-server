@@ -4,6 +4,7 @@ const ownerRouter = express.Router();
 import * as ownerController from "../controllers/ownerController/ownerPropertyController.js";
 import * as maintenanceController from "../controllers/ownerController/maintenaceController.js";
 import * as hireController from "../controllers/ownerController/hireController.js";
+import * as rentController from "../controllers/ownerController/rentController.js";
 
 ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData);
 ownerRouter.post("/add-property", ownerController.addProperty);
@@ -49,6 +50,9 @@ ownerRouter.post(
   hireController.acceptCounterRequest
 );
 ownerRouter.post("/fire-manager", hireController.fireManager);
+//Rent
+ownerRouter.post("/verify-online-rent", rentController.verifyOnlineRent);
+ownerRouter.post("/collect-rent", rentController.collectRent);
 
 // Total APIs: 10
 
