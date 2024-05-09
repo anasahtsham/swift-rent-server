@@ -86,18 +86,20 @@ export const verifyOnlineRent = async (req, res) => {
       const propertyAddress = propertyAddressResult.rows[0].address;
 
       // Send notifications
-      const notificationMessage = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for property ${propertyAddress} has been verified online.`;
+      const notificationType = "R";
 
       const notificationQuery = `
           INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-          VALUES ($1, $2, $3, $4, $5, 'R');
+          VALUES ($1, $2, $3, $4, $5, $6);
       `;
       await db.query(notificationQuery, [
-        receiverID,
-        receiverType,
-        senderID,
-        senderType,
+        managerID,
+        "M",
+        ownerID,
+        "O",
         notificationMessage,
+        notificationType,
       ]);
 
       return res
@@ -159,18 +161,20 @@ export const verifyOnlineRent = async (req, res) => {
       const propertyAddress = propertyAddressResult.rows[0].address;
 
       // Send notifications
-      const notificationMessage = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for property ${propertyAddress} has been verified online.`;
+      const notificationType = "R";
 
       const notificationQuery = `
           INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-          VALUES ($1, $2, $3, $4, $5, 'R');
+          VALUES ($1, $2, $3, $4, $5, $6);
       `;
       await db.query(notificationQuery, [
-        receiverID,
-        receiverType,
-        senderID,
-        senderType,
+        tenantID,
+        "T",
+        ownerID,
+        "O",
         notificationMessage,
+        notificationType,
       ]);
 
       return res
