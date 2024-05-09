@@ -83,8 +83,21 @@ export const verifyOnlineRent = async (req, res) => {
       amountSubmittedToOwner,
     ]);
 
+    // Get Property Address
+    const propertyAddressQuery = `
+      SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+      FROM Property P
+      JOIN Area A ON P.areaID = A.id
+      JOIN City C ON A.cityID = C.id
+      WHERE P.id = $1;
+    `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
     // Send notification to owner
-    const notificationMessage = `Manager has verified online rent for the property.`;
+    const notificationMessage = `Manager has verified online rent for the property ${propertyAddress}.`;
     const notificationQuery = `
       INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
       VALUES ($1, 'O', $2, 'M', $3, 'R');
@@ -96,7 +109,7 @@ export const verifyOnlineRent = async (req, res) => {
     ]);
 
     // Send notification to tenant
-    const tenantNotificationMessage = `Manager has verified online rent for the property.`;
+    const tenantNotificationMessage = `Manager has verified online rent for the property ${propertyAddress}.`;
     const tenantNotificationQuery = `
       INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
       VALUES ($1, 'T', $2, 'M', $3, 'R');
@@ -196,6 +209,43 @@ export const collectRent = async (req, res) => {
         WHERE id = $1;
       `;
     await db.query(updateRentNoticeQuery, [rentNoticeID]);
+
+    // Get Property Address
+    const propertyAddressQuery = `
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = $1;
+      `;
+    const propertyAddressResult = await db.query(propertyAddressQuery, [
+      propertyID,
+    ]);
+    const propertyAddress = propertyAddressResult.rows[0].address;
+
+    // Send notification to owner
+    const notificationMessage = `Manager has collected rent for the property ${propertyAddress}.`;
+    const notificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+        VALUES ($1, 'O', $2, 'M', $3, 'R');
+      `;
+    await db.query(notificationQuery, [
+      ownerID,
+      managerID,
+      notificationMessage,
+    ]);
+
+    // Send notification to tenant
+    const tenantNotificationMessage = `Manager has collected rent for the property ${propertyAddress}.`;
+    const tenantNotificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+        VALUES ($1, 'T', $2, 'M', $3, 'R');
+      `;
+    await db.query(tenantNotificationQuery, [
+      tenantID,
+      managerID,
+      tenantNotificationMessage,
+    ]);
 
     return res.status(200).json({ success: "Rent collected successfully." });
   } catch (error) {
