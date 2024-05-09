@@ -1,17 +1,17 @@
 import express from "express";
 const tenantRouter = express.Router();
 
-import * as tenantController from "../controllers/TenantController/tenantController.js";
+import * as tenantRentalController from "../controllers/TenantController/tenantRentalController.js";
 import * as rentConteoller from "../controllers/TenantController/rentController.js";
 
-tenantRouter.post("/lease-request", tenantController.getLeaseRequest);
+tenantRouter.post("/lease-request", tenantRentalController.getLeaseRequest);
 tenantRouter.post(
   "/lease-request-detail",
-  tenantController.getLeaseRequestDetail
+  tenantRentalController.getLeaseRequestDetail
 );
-tenantRouter.post("/lease-reject", tenantController.leaseReject);
-tenantRouter.post("/lease-accept", tenantController.acceptLease);
-tenantRouter.post("/list-of-rentals", tenantController.listOfRentals);
+tenantRouter.post("/lease-reject", tenantRentalController.leaseReject);
+tenantRouter.post("/lease-accept", tenantRentalController.acceptLease);
+tenantRouter.post("/list-of-rentals", tenantRentalController.listOfRentals);
 //Rent Submissions
 //submitVerificationRequest
 tenantRouter.post(
