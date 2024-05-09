@@ -73,8 +73,7 @@ export const verifyOnlineRent = async (req, res) => {
       ]);
 
       // Send notifications
-      //   const ownerNotificationText = `Rent for your property has been verified online.`;
-      //   await sendNotification(ownerID, "O", ownerNotificationText, "R");
+      const ownerNotificationText = `Rent for your property has been verified online.`;
 
       return res
         .status(200)
@@ -122,8 +121,7 @@ export const verifyOnlineRent = async (req, res) => {
       ]);
 
       // Send notifications
-      //   const ownerNotificationText = `Rent for your property has been verified online.`;
-      //   await sendNotification(ownerID, "O", ownerNotificationText, "R");
+      const ownerNotificationText = `Rent for your property has been verified online.`;
 
       return res
         .status(200)
