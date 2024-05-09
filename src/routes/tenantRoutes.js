@@ -1,9 +1,9 @@
 import express from "express";
 const tenantRouter = express.Router();
 
-import * as tenantRentalController from "../controllers/tenantControllerr/tenantRentalController.js";
-import * as tenantLeaseController from "../controllers/tenantControllerr/tenantLease.js";
-import * as rentController from "../controllers/tenantControllerr/rentController.js";
+import * as tenantRentalController from "../controllers/tenantController/tenantRentalController.js";
+import * as tenantLeaseController from "../controllers/tenantController/tenantLease.js";
+import * as rentController from "../controllers/tenantController/rentController.js";
 
 tenantRouter.post("/lease-request", tenantLeaseController.getLeaseRequest);
 tenantRouter.post(
