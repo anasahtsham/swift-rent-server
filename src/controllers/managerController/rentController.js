@@ -7,11 +7,12 @@ export const verifyOnlineRent = async (req, res) => {
 
     // Find the tenantID associated with the property
     const propertyQuery = `
-        SELECT tenantID
+        SELECT ownerID, tenantID
         FROM Property
         WHERE id = $1;
       `;
     const propertyResult = await db.query(propertyQuery, [propertyID]);
+    const ownerID = propertyResult.rows[0].ownerid;
     const tenantID = propertyResult.rows[0].tenantid;
 
     // Find the latest TenantRentNotice with paymentStatus 'V'
@@ -80,6 +81,30 @@ export const verifyOnlineRent = async (req, res) => {
       collectedAmount,
       managersCut,
       amountSubmittedToOwner,
+    ]);
+
+    // Send notification to owner
+    const notificationMessage = `Manager has verified online rent for the property.`;
+    const notificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, 'O', $2, 'M', $3, 'R');
+    `;
+    await db.query(notificationQuery, [
+      ownerID,
+      managerID,
+      notificationMessage,
+    ]);
+
+    // Send notification to tenant
+    const tenantNotificationMessage = `Manager has verified online rent for the property.`;
+    const tenantNotificationQuery = `
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, 'T', $2, 'M', $3, 'R');
+    `;
+    await db.query(tenantNotificationQuery, [
+      tenantID,
+      managerID,
+      tenantNotificationMessage,
     ]);
 
     return res
@@ -186,12 +211,13 @@ export const submitManagerVerificationRequest = async (req, res) => {
 
     // Find ownerID
     const ownerIDQuery = `
-      SELECT ownerID
+      SELECT ownerID , tenantID
       FROM Property
       WHERE id = $1;
     `;
     const ownerIDResult = await db.query(ownerIDQuery, [propertyID]);
     const ownerID = ownerIDResult.rows[0].ownerid;
+    const tenantID = ownerIDResult.rows[0].tenantid;
 
     // Send notification to owner
     const propertyAddressQuery = `
@@ -205,8 +231,6 @@ export const submitManagerVerificationRequest = async (req, res) => {
       propertyID,
     ]);
     const propertyAddress = propertyAddressResult.rows[0].address;
-
-    const notificationMessage = `Manager is requesting online rent verification for property ${propertyAddress}.`;
 
     // Find last TenantRentNotice for the property
     const lastRentNoticeQuery = `
@@ -264,6 +288,8 @@ export const submitManagerVerificationRequest = async (req, res) => {
       rentNoticeID,
     ]);
 
+    // Send notification to owner
+    const notificationMessage = `Manager is requesting online rent verification for property ${propertyAddress}.`;
     const notificationQuery = `
     INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
     VALUES ($1, 'O', $2, 'M', $3, 'R');
