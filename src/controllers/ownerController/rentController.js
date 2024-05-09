@@ -257,30 +257,32 @@ export const collectRent = async (req, res) => {
 
       // Get Property Address
       const propertyAddressQuery = `
-            SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
-            FROM Property P
-            JOIN Area A ON P.areaID = A.id
-            JOIN City C ON A.cityID = C.id
-            WHERE P.id = $1;
-          `;
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = $1;
+      `;
       const propertyAddressResult = await db.query(propertyAddressQuery, [
         propertyID,
       ]);
       const propertyAddress = propertyAddressResult.rows[0].address;
 
       // Send notifications
-      const notificationMessage = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for property ${propertyAddress} has been collected.`;
+      const notificationType = "R";
 
       const notificationQuery = `
-              INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-              VALUES ($1, $2, $3, $4, $5, 'R');
-          `;
+          INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+          VALUES ($1, $2, $3, $4, $5, $6);
+      `;
       await db.query(notificationQuery, [
-        receiverID,
-        receiverType,
-        senderID,
-        senderType,
+        managerID,
+        "M",
+        ownerID,
+        "O",
         notificationMessage,
+        notificationType,
       ]);
 
       return res.status(200).json({ success: "Rent collected successfully." });
@@ -327,30 +329,32 @@ export const collectRent = async (req, res) => {
 
       // Get Property Address
       const propertyAddressQuery = `
-            SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
-            FROM Property P
-            JOIN Area A ON P.areaID = A.id
-            JOIN City C ON A.cityID = C.id
-            WHERE P.id = $1;
-          `;
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = $1;
+      `;
       const propertyAddressResult = await db.query(propertyAddressQuery, [
         propertyID,
       ]);
       const propertyAddress = propertyAddressResult.rows[0].address;
 
       // Send notifications
-      const notificationMessage = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for property ${propertyAddress} has been collected.`;
+      const notificationType = "R";
 
       const notificationQuery = `
-              INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-              VALUES ($1, $2, $3, $4, $5, 'R');
-          `;
+          INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+          VALUES ($1, $2, $3, $4, $5, $6);
+      `;
       await db.query(notificationQuery, [
-        receiverID,
-        receiverType,
-        senderID,
-        senderType,
+        tenantID,
+        "T",
+        ownerID,
+        "O",
         notificationMessage,
+        notificationType,
       ]);
 
       return res.status(200).json({ success: "Rent collected successfully." });
