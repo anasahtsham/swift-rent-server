@@ -1,23 +1,30 @@
 import express from "express";
 const managerRouter = express.Router();
 
-import * as managerController from "../controllers/managerController/managerController.js";
+import * as managerHireController from "../controllers/managerController/managerHireController.js";
+import * as managerPropertyController from "../controllers/managerController/managerPropertyController.js";
 import * as rentController from "../controllers/managerController/rentController.js";
 
-managerRouter.get("/get-cities", managerController.getCities); //1
-managerRouter.get("/get-cities-dropdown", managerController.getCitiesDropdown); //2
-managerRouter.post("/view-hire-requests", managerController.viewHireRequests); //3
+managerRouter.get("/get-cities", managerHireController.getCities); //1
+managerRouter.get(
+  "/get-cities-dropdown",
+  managerHireController.getCitiesDropdown
+); //2
+managerRouter.post(
+  "/view-hire-requests",
+  managerHireController.viewHireRequests
+); //3
 managerRouter.post(
   "/detailed-hire-request",
-  managerController.detailedHiringRequest
+  managerHireController.detailedHiringRequest
 ); //4
 managerRouter.post(
   "/send-counter-request",
-  managerController.generateCounterRequest
+  managerHireController.generateCounterRequest
 ); //5
 managerRouter.post(
   "/view-managed-properties",
-  managerController.viewManagedProperties
+  managerPropertyController.viewManagedProperties
 ); //6
 //Rent Controller
 managerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //7
