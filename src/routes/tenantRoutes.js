@@ -1,26 +1,26 @@
 import express from "express";
 const tenantRouter = express.Router();
 
-import * as tenantRentalController from "../controllers/TenantController/tenantRentalController.js";
-import * as rentConteoller from "../controllers/TenantController/rentController.js";
+import * as tenantRentalController from "../controllers/tenantController/tenantRentalController.js";
+import * as tenantLeaseController from "../controllers/tenantController/tenantLease.js";
+import * as rentController from "../controllers/tenantController/rentController.js";
 
-tenantRouter.post("/lease-request", tenantRentalController.getLeaseRequest);
+tenantRouter.post("/lease-request", tenantLeaseController.getLeaseRequest);
 tenantRouter.post(
   "/lease-request-detail",
-  tenantRentalController.getLeaseRequestDetail
+  tenantLeaseController.getLeaseRequestDetail
 );
-tenantRouter.post("/lease-reject", tenantRentalController.leaseReject);
-tenantRouter.post("/lease-accept", tenantRentalController.acceptLease);
+tenantRouter.post("/lease-reject", tenantLeaseController.leaseReject);
+tenantRouter.post("/lease-accept", tenantLeaseController.acceptLease);
 tenantRouter.post("/list-of-rentals", tenantRentalController.listOfRentals);
 //Rent Submissions
-//submitVerificationRequest
 tenantRouter.post(
   "/submit-verification-request",
-  rentConteoller.submitVerificationRequest
+  rentController.submitVerificationRequest
 );
 tenantRouter.post(
   "/submit-collection-request",
-  rentConteoller.submitCollectionRequest
+  rentController.submitCollectionRequest
 );
 
 // Total APIs: 5

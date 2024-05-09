@@ -1,6 +1,6 @@
 import db from "../../config/config.js";
 
-// Pie Chart Analytics
+// API 1: Pie Chart Analytics
 export const getAnalyticsPieCharts = async (req, res) => {
   try {
     // Query to fetch analytics for users, user complaints, and payments
@@ -50,7 +50,7 @@ export const getAnalyticsPieCharts = async (req, res) => {
   }
 };
 
-// Analytics: Property Statuses with Cities (SunBurst)
+// API 2: Property Statuses with Cities (SunBurst)
 export const getPropertyStatusesWithCities = async (req, res) => {
   try {
     const result = await db.query(`
@@ -100,7 +100,7 @@ export const getPropertyStatusesWithCities = async (req, res) => {
   }
 };
 
-// Analytics: Property Types Per City (Horizontal Stacked Bar Graph)
+// API 3: Property Types Per City (Horizontal Stacked Bar Graph)
 export const getPropertyTypesPerCityAnalytics = async (req, res) => {
   try {
     // Fetch property types per city data from the database

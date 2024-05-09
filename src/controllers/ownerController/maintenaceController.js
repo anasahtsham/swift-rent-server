@@ -1,6 +1,6 @@
 import db from "../../config/config.js";
 
-// Generate Maintenance Report
+// API 1: Generate Maintenance Report
 export const generateMaintenanceReport = async (req, res) => {
   const { propertyID, title, description, cost } = req.body;
 
@@ -31,7 +31,7 @@ export const generateMaintenanceReport = async (req, res) => {
   }
 };
 
-// Display Specific Property Maintenance Report
+// API 2: Display Specific Property Maintenance Report
 export const displayMaintenanceReport = async (req, res) => {
   const { ownerID, propertyID } = req.body;
 
@@ -72,6 +72,7 @@ export const displayMaintenanceReport = async (req, res) => {
   }
 };
 
+// API 3: Display All Maintenance Reports
 export const displayAllMaintenanceReports = async (req, res) => {
   const { ownerID } = req.body;
 
