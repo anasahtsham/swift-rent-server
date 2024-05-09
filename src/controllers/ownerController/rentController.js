@@ -72,8 +72,33 @@ export const verifyOnlineRent = async (req, res) => {
         collectedAmount,
       ]);
 
+      // Get Property Address
+      const propertyAddressQuery = `
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = $1;
+      `;
+      const propertyAddressResult = await db.query(propertyAddressQuery, [
+        propertyID,
+      ]);
+      const propertyAddress = propertyAddressResult.rows[0].address;
+
       // Send notifications
-      const ownerNotificationText = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for your property has been verified online.`;
+
+      const notificationQuery = `
+          INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+          VALUES ($1, $2, $3, $4, $5, 'R');
+      `;
+      await db.query(notificationQuery, [
+        receiverID,
+        receiverType,
+        senderID,
+        senderType,
+        notificationMessage,
+      ]);
 
       return res
         .status(200)
@@ -120,8 +145,33 @@ export const verifyOnlineRent = async (req, res) => {
         collectedAmount,
       ]);
 
+      // Get Property Address
+      const propertyAddressQuery = `
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        FROM Property P
+        JOIN Area A ON P.areaID = A.id
+        JOIN City C ON A.cityID = C.id
+        WHERE P.id = $1;
+      `;
+      const propertyAddressResult = await db.query(propertyAddressQuery, [
+        propertyID,
+      ]);
+      const propertyAddress = propertyAddressResult.rows[0].address;
+
       // Send notifications
-      const ownerNotificationText = `Rent for your property has been verified online.`;
+      const notificationMessage = `Rent for your property has been verified online.`;
+
+      const notificationQuery = `
+          INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+          VALUES ($1, $2, $3, $4, $5, 'R');
+      `;
+      await db.query(notificationQuery, [
+        receiverID,
+        receiverType,
+        senderID,
+        senderType,
+        notificationMessage,
+      ]);
 
       return res
         .status(200)
