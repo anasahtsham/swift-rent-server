@@ -20,7 +20,8 @@ export const getLeaseRequest = async (req, res) => {
         JOIN UserInformation UI ON PL.registeredByID = UI.id
         JOIN Area A ON P.areaID = A.id
         JOIN City C ON A.cityID = C.id
-        WHERE PL.tenantID = $1 AND PL.leaseStatus = 'P';
+        WHERE PL.tenantID = $1 AND PL.leaseStatus = 'P'
+        ORDER BY pl.id DESC;
       `;
 
     const { rows } = await db.query(leaseRequestsQuery, [tenantID]);
