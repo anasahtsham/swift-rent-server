@@ -511,6 +511,83 @@ export const acceptCounterRequest = async (req, res) => {
     `;
     await db.query(managerNotificationQuery, [managerid, ownerID]);
 
+    // Get PropertyID
+    const propertyIDQuery = `
+      SELECT propertyID, purpose
+      FROM ManagerHireRequest
+      WHERE id = (
+        SELECT managerHireRequestID
+        FROM ManagerHireCounterRequest
+        WHERE id = $1
+      );
+    `;
+    const propertyIDResult = await db.query(propertyIDQuery, [
+      managerCounterRequestID,
+    ]);
+    const propertyID = propertyIDResult.rows[0].propertyid;
+    const purpose = propertyIDResult.rows[0].purpose;
+
+    //Get tenantID from Property table
+    const tenantIDQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const tenantIDResult = await db.query(tenantIDQuery, [propertyID]);
+    const tenantID = tenantIDResult.rows[0].tenantid;
+    const managerID = managerid;
+
+    // Check the
+
+    //Only Caretaking Manager
+    if (purpose === "C") {
+      // Create Rating Table for Owner to rate Manager
+      const createOwnerManagerRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'O', $3, 'M', 'P');
+      `;
+      await db.query(createOwnerManagerRatingQuery, [
+        propertyID,
+        ownerID,
+        managerID,
+      ]);
+
+      // Create Rating Table for Manager to rate Owner
+      const createManagerOwnerRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'M', $3, 'O', 'P');
+      `;
+      await db.query(createManagerOwnerRatingQuery, [
+        propertyID,
+        managerID,
+        ownerID,
+      ]);
+    }
+
+    if (tenantID) {
+      // Create Rating Table for Tenant to rate Manager
+      const createTenantManagerRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'T', $3, 'M', 'P');
+      `;
+      await db.query(createTenantManagerRatingQuery, [
+        propertyID,
+        tenantID,
+        managerID,
+      ]);
+
+      // Create Rating Table for Manager to rate Tenant
+      const createManagerTenantRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'M', $3, 'T', 'P');
+      `;
+      await db.query(createManagerTenantRatingQuery, [
+        propertyID,
+        managerID,
+        tenantID,
+      ]);
+    }
+
     // Send success response
     res.status(200).json({
       success: true,
@@ -690,6 +767,96 @@ export const fireManager = async (req, res) => {
       );
     `;
     await db.query(managerNotificationQuery, [managerID, ownerID]);
+
+    // Get purpose
+    const propertyIDQuery = `
+      SELECT purpose
+      FROM ManagerHireRequest
+      WHERE id = $1
+      );
+    `;
+    const propertyIDResult = await db.query(propertyIDQuery, [
+      managerHireRequestID,
+    ]);
+    const purpose = propertyIDResult.rows[0].purpose;
+
+    //Get tenantID from Property table
+    const tenantIDQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const tenantIDResult = await db.query(tenantIDQuery, [propertyID]);
+    const tenantID = tenantIDResult.rows[0].tenantid;
+
+    //Only Caretaking Manager
+    if (purpose === "C") {
+      // Update the rating ratingEndDate of rating Owner to Manager
+      const updateOwnerManagerRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'O'
+          AND ratedByID = $3
+          AND ratedByType = 'M';
+      `;
+      await db.query(updateOwnerManagerRatingQuery, [
+        propertyID,
+        ownerID,
+        managerID,
+      ]);
+
+      // Update the rating ratingEndDate of rating Manager to Owner
+      const updateManagerOwnerRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'M'
+          AND ratedByID = $3
+          AND ratedByType = 'O';
+      `;
+      await db.query(updateManagerOwnerRatingQuery, [
+        propertyID,
+        managerID,
+        ownerID,
+      ]);
+    }
+
+    if (tenantID) {
+      // Update the rating ratingEndDate of rating Tenant to Manager
+      const updateTenantManagerRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'T'
+          AND ratedByID = $3
+          AND ratedByType = 'M';
+      `;
+      await db.query(updateTenantManagerRatingQuery, [
+        propertyID,
+        tenantID,
+        managerID,
+      ]);
+
+      // Update the rating ratingEndDate of rating Manager to Tenant
+      const updateManagerTenantRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'M'
+          AND ratedByID = $3
+          AND ratedByType = 'T';
+      `;
+      await db.query(updateManagerTenantRatingQuery, [
+        propertyID,
+        managerID,
+        tenantID,
+      ]);
+    }
 
     // Send success response
     res.status(200).json({

@@ -307,6 +307,61 @@ export const acceptLease = async (req, res) => {
       notificationTextTenant,
     ]);
 
+    // Get OwnerID and ManagerID from Property table
+    const getOwnerManagerQuery = `SELECT ownerID, managerID FROM Property WHERE id = $1;`;
+    const { rows: ownerManagerRows } = await db.query(getOwnerManagerQuery, [
+      propertyid,
+    ]);
+    const ownerID = ownerManagerRows[0].ownerid;
+    const managerID = ownerManagerRows[0].managerid;
+    const tenantID = tenantid;
+
+    // Create Rating Table for Owner to rate Tenant
+    const createOwnerTenantRatingQuery = `
+      INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+      VALUES ($1, $2, 'O', $3, 'T', 'P');
+    `;
+    await db.query(createOwnerTenantRatingQuery, [
+      propertyid,
+      ownerID,
+      tenantID,
+    ]);
+
+    // Create Rating Table for Tenant to rate Owner
+    const createTenantOwnerRatingQuery = `
+      INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+      VALUES ($1, $2, 'T', $3, 'O', 'P');
+    `;
+    await db.query(createTenantOwnerRatingQuery, [
+      propertyid,
+      tenantID,
+      ownerID,
+    ]);
+
+    if (managerID) {
+      // Create Rating Table for Manager to rate Tenant
+      const createManagerTenantRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'M', $3, 'T', 'P');
+      `;
+      await db.query(createManagerTenantRatingQuery, [
+        propertyid,
+        managerID,
+        tenantID,
+      ]);
+
+      // Create Rating Table for Tenant to rate Manager
+      const createTenantManagerRatingQuery = `
+        INSERT INTO Rating (propertyID, userID, userType, ratedByID, ratedByType, ratingStatus)
+        VALUES ($1, $2, 'T', $3, 'M', 'P');
+      `;
+      await db.query(createTenantManagerRatingQuery, [
+        propertyid,
+        tenantID,
+        managerID,
+      ]);
+    }
+
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error accepting lease:", error);

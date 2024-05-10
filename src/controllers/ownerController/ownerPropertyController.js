@@ -579,6 +579,72 @@ export const terminateTenant = async (req, res) => {
       ]);
     }
 
+    if (managerID) {
+      // Update the rating ratingEndDate of rating Tenant to Manager
+      const updateOwnerManagerRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'T'
+          AND ratedByID = $3
+          AND ratedByType = 'O';
+      `;
+      await db.query(updateOwnerManagerRatingQuery, [
+        propertyID,
+        tenantID,
+        ownerID,
+      ]);
+
+      // Update the rating ratingEndDate of rating Manager to Tenant
+      const updateManagerTenantRatingQuery = `
+        UPDATE Rating
+        SET ratingEndDate = CURRENT_DATE
+        WHERE propertyID = $1
+          AND userID = $2
+          AND userType = 'M'
+          AND ratedByID = $3
+          AND ratedByType = 'T';
+      `;
+      await db.query(updateManagerTenantRatingQuery, [
+        propertyID,
+        managerID,
+        tenantID,
+      ]);
+    }
+
+    // Update the rating ratingEndDate of rating Owner to Tenant
+    const updateOwnerTenantRatingQuery = `
+      UPDATE Rating
+      SET ratingEndDate = CURRENT_DATE
+      WHERE propertyID = $1
+        AND userID = $2
+        AND userType = 'O'
+        AND ratedByID = $3
+        AND ratedByType = 'T';
+    `;
+    await db.query(updateOwnerTenantRatingQuery, [
+      propertyID,
+      ownerID,
+      tenantID,
+    ]);
+
+    // Update the rating ratingEndDate of rating Tenant to Owner
+    const updateTenantOwnerRatingQuery = `
+      UPDATE Rating
+      SET ratingEndDate = CURRENT_DATE
+      WHERE propertyID = $1
+        AND userID = $2
+        AND userType = 'T'
+        AND ratedByID = $3
+        AND ratedByType = 'O';
+    `;
+    await db.query(updateTenantOwnerRatingQuery, [
+      propertyID,
+      tenantID,
+      ownerID,
+    ]);
+
     return res
       .status(200)
       .json({ success: true, message: "Lease terminated successfully." });
