@@ -703,7 +703,7 @@ export const fetchPropertyDetail = async (req, res) => {
           tenantPaymentStatus:
             currentMonthRentStatus.tenantpaymentstatus || "Not Rented",
           managerPaymentStatus:
-            currentMonthRentStatus.managerpaymentstatus || "Not Rented",
+            currentMonthRentStatus.managerpaymentstatus || null,
         },
         totalMaintenanceCost: totalMaintenanceCost,
         totalPropertyRevenue: totalPropertyRevenue,
