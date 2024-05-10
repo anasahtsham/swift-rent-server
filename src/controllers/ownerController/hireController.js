@@ -472,8 +472,6 @@ export const acceptCounterRequest = async (req, res) => {
     ]);
     const propertyAddress = propertyAddressResult.rows[0].address;
 
-    console.log(tenantResult.rows[0].tenantid);
-
     if (tenantResult.rows[0].tenantid !== null) {
       const tenantID = tenantResult.rows[0].tenantid;
 

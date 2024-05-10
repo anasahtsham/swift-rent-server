@@ -79,7 +79,6 @@ export const fetchPropertyDetail = async (req, res) => {
       tenantID,
       propertyID,
     ]);
-    console.log(rentStatusResult.rows[0]);
     const rentStatus = rentStatusResult.rows[0].paymentstatus;
 
     // Calculate total submitted rent

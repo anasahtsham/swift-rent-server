@@ -214,7 +214,8 @@ export const collectRent = async (req, res) => {
 
     // Get Property Address
     const propertyAddressQuery = `
-        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address
+        SELECT CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS address,
+        p.ownerID
         FROM Property P
         JOIN Area A ON P.areaID = A.id
         JOIN City C ON A.cityID = C.id
@@ -224,6 +225,7 @@ export const collectRent = async (req, res) => {
       propertyID,
     ]);
     const propertyAddress = propertyAddressResult.rows[0].address;
+    const ownerID = propertyAddressResult.rows[0].ownerid;
 
     // Send notification to owner
     const notificationMessage = `Manager has collected rent for the property ${propertyAddress}.`;
@@ -301,7 +303,6 @@ export const submitManagerVerificationRequest = async (req, res) => {
     ]);
 
     const rentNoticeID = lastRentNoticeResult.rows[0].rentnoticeid;
-    console.log(rentNoticeID);
 
     if (lastRentNoticeResult.rows.length === 0) {
       return res
@@ -319,9 +320,6 @@ export const submitManagerVerificationRequest = async (req, res) => {
     const checkRequestResult = await db.query(checkRequestQuery, [
       rentNoticeID,
     ]);
-
-    console.log(checkRequestResult.rows);
-    console.log(checkRequestResult.rows.length);
 
     if (checkRequestResult.rows.length > 0) {
       return res.status(400).json({

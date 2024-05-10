@@ -6,8 +6,6 @@ export const registerComplaint = async (req, res) => {
     const { propertyID, userID, userType, sentToType, title, description } =
       req.body;
 
-    console.log(req.body);
-
     // Check if the sentToType exists on the property
     let receiverID;
     let receiverType;

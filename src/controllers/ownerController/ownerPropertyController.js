@@ -434,7 +434,6 @@ export const registerTenant = async (req, res) => {
 export const terminateTenant = async (req, res) => {
   try {
     const { ownerID, propertyID, moneyReturned, terminationReason } = req.body;
-    console.log(req.body);
 
     // Money returned should be equal or greater than 0
     if (moneyReturned < 0) {
@@ -473,7 +472,6 @@ export const terminateTenant = async (req, res) => {
     ]);
 
     if (rentNoticeResult.rows.length > 0) {
-      console.log(rentNoticeResult.rows);
       // There are pending or to collect rent notices, cannot terminate lease
       return res.status(400).json({
         success: "Cannot terminate lease. Pending rent notices exist.",

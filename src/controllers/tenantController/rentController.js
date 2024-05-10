@@ -4,7 +4,6 @@ import db from "../../config/config.js";
 export const submitVerificationRequest = async (req, res) => {
   try {
     const { tenantID, propertyID, verificationMessage } = req.body;
-    console.log(req.body);
 
     // Check if there is a manager for the property
     const managerIDQuery = `
@@ -114,7 +113,6 @@ export const submitVerificationRequest = async (req, res) => {
 export const submitCollectionRequest = async (req, res) => {
   try {
     const { tenantID, propertyID } = req.body;
-    console.log(req.body);
 
     // Check if there is a manager for the property
     const managerIDQuery = `

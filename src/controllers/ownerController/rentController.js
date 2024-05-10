@@ -120,7 +120,6 @@ export const verifyOnlineRent = async (req, res) => {
         tenantID,
         propertyID,
       ]);
-      console.log(rentNoticeResult.rows);
 
       if (rentNoticeResult.rows.length === 0) {
         return res.status(400).json({ success: "Error in verifying rent." });
