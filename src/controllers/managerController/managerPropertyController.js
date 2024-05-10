@@ -90,9 +90,16 @@ export const fetchPropertyDetail = async (req, res) => {
     const leaseQuery = `
       SELECT ui2.firstName || ' ' || ui2.lastName AS tenantName,
              ui3.firstName || ' ' || ui3.lastName AS registeredByName,
-             pl.leaseEndedOn, pl.dueDate, pl.fine, pl.incrementPercentage,
-             pl.incrementPeriod, pl.rent, pl.securityDeposit, pl.advancePayment,
-             pl.advancePaymentForMonths, pl.registeredByType
+             TO_CHAR((pl.leaseCreatedOn + INTERVAL '1 month' * pl.leasedForMonths) , 'MM-YYYY') AS leaseEndsOn, 
+             pl.dueDate, 
+             pl.fine, 
+             pl.incrementPercentage,
+             pl.incrementPeriod, 
+             pl.rent, 
+             pl.securityDeposit, 
+             pl.advancePayment,
+             pl.advancePaymentForMonths, 
+             pl.registeredByType
       FROM PropertyLease pl
       INNER JOIN UserInformation ui2 ON pl.tenantID = ui2.id
       INNER JOIN UserInformation ui3 ON pl.registeredByID = ui3.id
@@ -120,7 +127,7 @@ export const fetchPropertyDetail = async (req, res) => {
         propertyAddress: property.propertyaddress,
         ownerName: property.ownername,
         rentStatus: rentStatus
-          ? rentStatus.paymentstatus === "C"
+          ? rentStatus?.paymentstatus === "C"
             ? "Collected"
             : "Pending"
           : "Not Rented",
@@ -131,10 +138,10 @@ export const fetchPropertyDetail = async (req, res) => {
         myContract: managerContract || {},
       },
       buttons: {
-        collectRent: rentStatus ? rentStatus.paymentstatus === "T" : null,
-        verifyOnlineRent: rentStatus ? rentStatus.paymentstatus === "V" : null,
+        collectRent: rentStatus ? rentStatus?.paymentstatus === "T" : null,
+        verifyOnlineRent: rentStatus ? rentStatus?.paymentstatus === "V" : null,
         submitVerificationRequest: rentStatus
-          ? rentStatus.paymentstatus === "P"
+          ? rentStatus?.paymentstatus === "P"
           : null,
       },
     };

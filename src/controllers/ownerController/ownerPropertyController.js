@@ -616,7 +616,9 @@ export const fetchPropertyDetail = async (req, res) => {
     const leaseQuery = `
       SELECT pl.tenantID, ui.firstName || ' ' || ui.lastName AS tenantName,
              pl.registeredByID, ui2.firstName || ' ' || ui2.lastName AS registeredByName,
-             pl.registeredByType, pl.leaseEndedOn, pl.dueDate, pl.fine, pl.incrementPercentage,
+             pl.registeredByType, 
+             TO_CHAR((pl.leaseCreatedOn + INTERVAL '1 month' * pl.leasedForMonths) , 'MM-YYYY') AS leaseEndsOn, 
+             pl.dueDate, pl.fine, pl.incrementPercentage,
              pl.incrementPeriod, pl.rent, pl.securityDeposit, pl.advancePayment,
              pl.advancePaymentForMonths
       FROM PropertyLease pl
@@ -698,21 +700,21 @@ export const fetchPropertyDetail = async (req, res) => {
     // Combine all retrieved information into a response object
     const propertyDetail = {
       header: {
-        propertyAddress: property.propertyaddress,
+        propertyAddress: property?.propertyaddress,
         rentStatus: {
           tenantPaymentStatus:
-            currentMonthRentStatus.tenantpaymentstatus || "Not Rented",
+            currentMonthRentStatus?.tenantpaymentstatus || "Not Rented",
           managerPaymentStatus:
-            currentMonthRentStatus.managerpaymentstatus || null,
+            currentMonthRentStatus?.managerpaymentstatus || null,
         },
         totalMaintenanceCost: totalMaintenanceCost,
         totalPropertyRevenue: totalPropertyRevenue,
       },
       body: {
         propertyInformation: {
-          registeredOn: property.registeredon,
-          onRentDays: property.onrentdays || 0,
-          offRentDays: property.offrentdays || 0,
+          registeredOn: property?.registeredon,
+          onRentDays: property?.onrentdays || 0,
+          offRentDays: property?.offrentdays || 0,
         },
         leaseInformation: lease || {}, // Lease may not exist if property is vacant
         managerContract: managerContract || {}, // Manager contract may not exist if property is vacant
@@ -720,12 +722,12 @@ export const fetchPropertyDetail = async (req, res) => {
       buttons: {
         managerOffers: false, // Implementation needed to check manager offers
         collectRent:
-          currentMonthRentStatus.tenantpaymentstatus === "T" ||
-          currentMonthRentStatus.managerpaymentstatus === "P",
+          currentMonthRentStatus?.tenantpaymentstatus === "T" ||
+          currentMonthRentStatus?.managerpaymentstatus === "P",
         verifyOnlineRent:
-          currentMonthRentStatus.tenantpaymentstatus === "V" ||
-          (currentMonthRentStatus.managerpaymentstatus === "P" &&
-            currentMonthRentStatus.tenantpaymentstatus !== "C"),
+          currentMonthRentStatus?.tenantpaymentstatus === "V" ||
+          (currentMonthRentStatus?.managerpaymentstatus === "P" &&
+            currentMonthRentStatus?.tenantpaymentstatus !== "C"),
       },
     };
 
