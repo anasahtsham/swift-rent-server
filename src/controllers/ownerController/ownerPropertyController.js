@@ -589,3 +589,155 @@ export const terminateTenant = async (req, res) => {
       .json({ success: false, message: "Failed to terminate lease." });
   }
 };
+
+//API 6: Property Details
+export const fetchPropertyDetail = async (req, res) => {
+  try {
+    // Extract ownerID and propertyID from request parameters
+    const { ownerID, propertyID } = req.body;
+
+    // Part 1: Retrieve complete property address (address + area + city) and basic information
+    const propertyQuery = `
+      SELECT CONCAT(
+        p.propertyAddress, ', ', a.areaName, ', ', c.cityName
+      ) AS propertyAddress, 
+      TO_CHAR(p.registeredOn, 'DD-MM-YYYY') AS registeredOn, 
+      p.onRentDays, 
+      p.offRentDays
+      FROM Property p
+      JOIN Area a ON p.areaID = a.id
+      JOIN City c ON a.cityID = c.id
+      WHERE p.ownerID = $1 AND p.id = $2;
+    `;
+    const propertyResult = await db.query(propertyQuery, [ownerID, propertyID]);
+    const property = propertyResult.rows[0];
+
+    // Part 2: Retrieve lease information
+    const leaseQuery = `
+      SELECT pl.tenantID, ui.firstName || ' ' || ui.lastName AS tenantName,
+             pl.registeredByID, ui2.firstName || ' ' || ui2.lastName AS registeredByName,
+             pl.registeredByType, pl.leaseEndedOn, pl.dueDate, pl.fine, pl.incrementPercentage,
+             pl.incrementPeriod, pl.rent, pl.securityDeposit, pl.advancePayment,
+             pl.advancePaymentForMonths
+      FROM PropertyLease pl
+      INNER JOIN UserInformation ui ON pl.tenantID = ui.id
+      INNER JOIN UserInformation ui2 ON pl.registeredByID = ui2.id
+      WHERE pl.propertyID = $1;
+    `;
+    const leaseResult = await db.query(leaseQuery, [propertyID]);
+    const lease = leaseResult.rows[0];
+
+    // Part 3: Retrieve manager contract information
+    const managerContractQuery = `
+      SELECT mhr.managerID, ui3.firstName || ' ' || ui3.lastName AS managerName,
+             mhr.salaryPaymentType, mhr.salaryFixed, mhr.salaryPercentage,
+             mhr.whoBringsTenant, mhr.rent, mhr.specialCondition, mhr.needHelpWithLegalWork
+      FROM ManagerHireRequest mhr
+      INNER JOIN UserInformation ui3 ON mhr.managerID = ui3.id
+      WHERE mhr.propertyID = $1;
+    `;
+    const managerContractResult = await db.query(managerContractQuery, [
+      propertyID,
+    ]);
+    const managerContract = managerContractResult.rows[0];
+
+    // Part 4: Retrieve current month's rent status
+    const currentMonthRentStatusQuery = `
+      SELECT tn.paymentStatus AS tenantPaymentStatus,
+             mrc.paymentStatus AS managerPaymentStatus
+      FROM TenantRentNotice tn
+      LEFT JOIN ManagerRentCollection mrc ON tn.id = mrc.tenantRentNoticeID
+      WHERE tn.propertyID = $1 AND 
+            EXTRACT(MONTH FROM tn.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
+            EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+    `;
+    const currentMonthRentStatusResult = await db.query(
+      currentMonthRentStatusQuery,
+      [propertyID]
+    );
+    const currentMonthRentStatus = currentMonthRentStatusResult.rows[0];
+
+    // Part 5: Calculate total maintenance costs for the property
+    const maintenanceCostQuery = `
+      SELECT SUM(maintenanceCost) AS totalMaintenanceCost
+      FROM MaintenanceReport
+      WHERE propertyID = $1;
+    `;
+    const maintenanceCostResult = await db.query(maintenanceCostQuery, [
+      propertyID,
+    ]);
+    const totalMaintenanceCost = parseInt(
+      maintenanceCostResult.rows[0].totalmaintenancecost || 0
+    );
+
+    // Part 6: Calculate total property revenue
+    const totalRevenueQuery = `
+      SELECT SUM(collectedAmount) AS totalCollectedAmount
+      FROM OwnerRentTransaction
+      WHERE propertyID = $1;
+    `;
+    const totalRevenueResult = await db.query(totalRevenueQuery, [propertyID]);
+    const totalCollectedAmount =
+      totalRevenueResult.rows[0].totalcollectedamount || 0;
+
+    // Calculate total revenue after deducting returned money from terminated leases
+    const returnedMoneyQuery = `
+      SELECT SUM(moneyReturned) AS totalReturnedMoney
+      FROM TerminateLease
+      WHERE propertyLeaseID IN (
+        SELECT id FROM PropertyLease WHERE propertyID = $1
+      );
+    `;
+    const returnedMoneyResult = await db.query(returnedMoneyQuery, [
+      propertyID,
+    ]);
+    const totalReturnedMoney =
+      returnedMoneyResult.rows[0].totalreturnedmoney || 0;
+    const totalPropertyRevenue = totalCollectedAmount - totalReturnedMoney;
+
+    // Combine all retrieved information into a response object
+    const propertyDetail = {
+      header: {
+        propertyAddress: property.propertyaddress,
+        rentStatus: {
+          tenantPaymentStatus:
+            currentMonthRentStatus.tenantpaymentstatus || "Not Rented",
+          managerPaymentStatus:
+            currentMonthRentStatus.managerpaymentstatus || "Not Rented",
+        },
+        totalMaintenanceCost: totalMaintenanceCost,
+        totalPropertyRevenue: totalPropertyRevenue,
+      },
+      body: {
+        propertyInformation: {
+          registeredOn: property.registeredon,
+          onRentDays: property.onrentdays || 0,
+          offRentDays: property.offrentdays || 0,
+        },
+        leaseInformation: lease || {}, // Lease may not exist if property is vacant
+        managerContract: managerContract || {}, // Manager contract may not exist if property is vacant
+      },
+      buttons: {
+        managerOffers: false, // Implementation needed to check manager offers
+        collectRent:
+          currentMonthRentStatus.tenantpaymentstatus === "T" ||
+          currentMonthRentStatus.managerpaymentstatus === "P",
+        verifyOnlineRent:
+          currentMonthRentStatus.tenantpaymentstatus === "V" ||
+          (currentMonthRentStatus.managerpaymentstatus === "P" &&
+            currentMonthRentStatus.tenantpaymentstatus !== "C"),
+      },
+    };
+
+    // Send the property detail response
+    return res.status(200).json({
+      propertyDetail: propertyDetail,
+    });
+  } catch (error) {
+    console.error("Error fetching property detail:", error);
+    return res.status(500).json({
+      success: "Failed to fetch property detail.",
+      error: error.message,
+    });
+  }
+};
