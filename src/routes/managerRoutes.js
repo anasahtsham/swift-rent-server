@@ -26,13 +26,18 @@ managerRouter.post(
   "/view-managed-properties",
   managerPropertyController.viewManagedProperties
 ); //6
+managerRouter.post(
+  "/fetch-property-detail",
+  managerPropertyController.fetchPropertyDetail
+); //7
+
 //Rent Controller
-managerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //7
-managerRouter.post("/collect-rent", rentController.collectRent); //8
+managerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //8
+managerRouter.post("/collect-rent", rentController.collectRent); //9
 managerRouter.post(
   "/submit-verification-request",
   rentController.submitManagerVerificationRequest
-); //9
+); //10
 
 // Total APIs: 9
 
