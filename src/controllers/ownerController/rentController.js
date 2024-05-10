@@ -132,7 +132,7 @@ export const verifyOnlineRent = async (req, res) => {
       const updateRentNoticeQuery = `
           UPDATE TenantRentNotice
           SET paymentStatus = 'C',
-          submittedRent = $1
+          submittedAmount = $1
           WHERE id = $2;
         `;
       await db.query(updateRentNoticeQuery, [collectedAmount, rentNoticeID]);
@@ -313,7 +313,7 @@ export const collectRent = async (req, res) => {
       const updateRentNoticeQuery = `
           UPDATE TenantRentNotice
           SET paymentStatus = 'C', paymentOn = CURRENT_TIMESTAMP,
-          submittedRent = $1
+          submittedAmount = $1
           WHERE id = $2;
         `;
       await db.query(updateRentNoticeQuery, [collectedAmount, rentNoticeID]);

@@ -7,7 +7,6 @@ export const viewManagedProperties = async (req, res) => {
     const { managerID } = req.body;
 
     // Query to fetch managed properties along with relevant details
-    // Query to fetch managed properties along with relevant details
     const query = `
       SELECT
         P.id,

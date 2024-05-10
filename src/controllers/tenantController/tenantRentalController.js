@@ -79,10 +79,8 @@ export const fetchPropertyDetail = async (req, res) => {
       tenantID,
       propertyID,
     ]);
-    const currentMonthRentStatus = rentStatusResult.rows[0];
-    const rentStatus = currentMonthRentStatus
-      ? currentMonthRentStatus.paymentstatus
-      : "P";
+    console.log(rentStatusResult.rows[0]);
+    const rentStatus = rentStatusResult.rows[0].paymentstatus;
 
     // Calculate total submitted rent
     const totalRentQuery = `
@@ -99,6 +97,7 @@ export const fetchPropertyDetail = async (req, res) => {
     // Part 2: Retrieve property lease information
     const leaseQuery = `
       SELECT 
+        pl.tenantID as tenantID,
         pl.registeredByID AS registeredByID,
         CONCAT(uir.firstName, ' ', uir.lastName) AS registeredByName,
         pl.registeredByType AS registeredByType,
@@ -131,8 +130,8 @@ export const fetchPropertyDetail = async (req, res) => {
         leaseInformation: lease || {},
       },
       buttons: {
-        submitRentCollectionRequest: rentStatus === "Pending",
-        submitVerificationRequest: rentStatus === "Pending",
+        submitRentCollectionRequest: rentStatus === "P",
+        submitVerificationRequest: rentStatus === "P",
       },
     };
 

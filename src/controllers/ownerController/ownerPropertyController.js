@@ -690,7 +690,7 @@ export const fetchPropertyDetail = async (req, res) => {
       FROM PropertyLease pl
       INNER JOIN UserInformation ui ON pl.tenantID = ui.id
       INNER JOIN UserInformation ui2 ON pl.registeredByID = ui2.id
-      WHERE pl.propertyID = $1;
+      WHERE pl.propertyID = $1 AND pl.leaseStatus = 'A';
     `;
     const leaseResult = await db.query(leaseQuery, [propertyID]);
     const lease = leaseResult.rows[0];
