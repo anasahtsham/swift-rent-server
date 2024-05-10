@@ -697,6 +697,15 @@ export const fetchPropertyDetail = async (req, res) => {
       returnedMoneyResult.rows[0].totalreturnedmoney || 0;
     const totalPropertyRevenue = totalCollectedAmount - totalReturnedMoney;
 
+    //check for manager offers
+    const managerOfferQuery = `
+      SELECT managerStatus
+      FROM ManagerHireRequest
+      WHERE propertyID = $1 AND managerStatus = 'P';
+    `;
+    const managerOfferResult = await db.query(managerOfferQuery, [propertyID]);
+    const managerOffers = managerOfferResult.rows.length > 0;
+
     // Combine all retrieved information into a response object
     const propertyDetail = {
       header: {
@@ -720,7 +729,7 @@ export const fetchPropertyDetail = async (req, res) => {
         managerContract: managerContract || {}, // Manager contract may not exist if property is vacant
       },
       buttons: {
-        managerOffers: false, // Implementation needed to check manager offers
+        managerOffers: managerOffers,
         collectRent:
           currentMonthRentStatus?.tenantpaymentstatus === "T" ||
           currentMonthRentStatus?.managerpaymentstatus === "P",

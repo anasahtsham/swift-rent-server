@@ -88,8 +88,9 @@ export const fetchPropertyDetail = async (req, res) => {
 
     // Part 4: Retrieve lease information
     const leaseQuery = `
-      SELECT ui2.firstName || ' ' || ui2.lastName AS tenantName,
-             ui3.firstName || ' ' || ui3.lastName AS registeredByName,
+      SELECT ui2.id as tenantID ,ui2.firstName || ' ' || ui2.lastName AS tenantName,
+             pl.registeredByID as registeredByID, ui3.firstName || ' ' || ui3.lastName AS registeredByName,
+             pl.registeredByType as registeredByType, 
              TO_CHAR((pl.leaseCreatedOn + INTERVAL '1 month' * pl.leasedForMonths) , 'MM-YYYY') AS leaseEndsOn, 
              pl.dueDate, 
              pl.fine, 
@@ -110,7 +111,7 @@ export const fetchPropertyDetail = async (req, res) => {
 
     // Part 5: Retrieve manager contract information
     const managerContractQuery = `
-      SELECT salaryPaymentType, salaryFixed, salaryPercentage,
+      SELECT id as managerID, salaryPaymentType, salaryFixed, salaryPercentage,
              whoBringsTenant, rent, specialCondition, needHelpWithLegalWork
       FROM ManagerHireRequest
       WHERE propertyID = $1 AND managerID = $2;

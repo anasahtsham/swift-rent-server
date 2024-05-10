@@ -22,7 +22,11 @@ tenantRouter.post(
   "/submit-collection-request",
   rentController.submitCollectionRequest
 ); //7
+tenantRouter.post(
+  "/fetch-property-detail",
+  tenantRentalController.fetchPropertyDetail
+); //8
 
-// Total APIs: 7
+// Total APIs: 8
 
 export default tenantRouter;
