@@ -14,7 +14,7 @@ export const fetchMyRatings = async (req, res) => {
         rt.ratingStars,
         rt.ratingOpinon,
         rt.ratingComment,
-        rt.ratedOn
+        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id
@@ -53,7 +53,7 @@ export const fetchGivenRatings = async (req, res) => {
         rt.ratingStars,
         rt.ratingOpinon,
         rt.ratingComment,
-        rt.ratedOn
+        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id
@@ -89,7 +89,7 @@ export const fetchPendingRatings = async (req, res) => {
         rt.id,
         CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
         CONCAT(ui.firstName, ' ', ui.lastName) AS rateeName,
-        rt.ratingStartDate
+        TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MM') as ratedOn ratingStartDate
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id
@@ -134,7 +134,8 @@ export const submitRating = async (req, res) => {
         ratingStars = $1,
         ratingOpinon = $2,
         ratingComment = $3,
-        ratingStatus = 'R'
+        ratingStatus = 'R',
+        ratedOn = CURRENT_TIMESTAMP
     WHERE id = $4;
     `;
 
