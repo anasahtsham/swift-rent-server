@@ -6,6 +6,7 @@ import * as areaManagement from "../controllers/adminController/areaManagement.j
 import * as complaintManagement from "../controllers/adminController/complaintManagement.js";
 import * as userManagement from "../controllers/adminController/userManagement.js";
 import * as analytics from "../controllers/adminController/analytics.js";
+import * as propertyManagement from "../controllers/adminController/propertyManagement.js";
 
 //Authentication
 adminRouter.post("/login", authentication.login); //1
@@ -36,6 +37,9 @@ adminRouter.get(
   "/h-s-bar-graph-analytics",
   analytics.getPropertyTypesPerCityAnalytics
 ); //21
+//Property Management
+//viewPropertyList
+adminRouter.get("/view-property-list", propertyManagement.viewPropertyList); //22
 
 //Total adminRouter routes: 21
 
