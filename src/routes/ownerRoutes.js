@@ -5,6 +5,7 @@ import * as ownerController from "../controllers/ownerController/ownerPropertyCo
 import * as maintenanceController from "../controllers/ownerController/maintenaceController.js";
 import * as hireController from "../controllers/ownerController/hireController.js";
 import * as rentController from "../controllers/ownerController/rentController.js";
+import * as analyticsController from "../controllers/ownerController/analytics.js";
 
 //Owner
 ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData); //1
@@ -61,6 +62,12 @@ ownerRouter.post("/fire-manager", hireController.fireManager); //16
 ownerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //17
 ownerRouter.post("/collect-rent", rentController.collectRent); //18
 
-// Total APIs: 17
+//Analytics
+ownerRouter.post("/home-analytics", analyticsController.homeAnalytics); //19
+ownerRouter.post("/pending-list", analyticsController.pendingRentsList); //20
+ownerRouter.post("/paid-list", analyticsController.paidRentsList); //21
+ownerRouter.post("/detailed-analytics", analyticsController.detailedAnalytics); //22
+
+// Total APIs: 22
 
 export default ownerRouter;

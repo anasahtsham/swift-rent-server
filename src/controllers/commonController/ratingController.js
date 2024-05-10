@@ -85,17 +85,17 @@ export const fetchPendingRatings = async (req, res) => {
 
     // Query to fetch pending ratings for the user
     const query = `
-    SELECT 
+    SELECT
         rt.id,
         CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
         CONCAT(ui.firstName, ' ', ui.lastName) AS rateeName,
-        TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MM') as ratedOn ratingStartDate
+        TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MM') as ratingStartDate
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id
     JOIN City c ON a.cityID = c.id
     JOIN UserInformation ui ON rt.userID = ui.id
-    WHERE rt.userID = $1 AND rt.userType = $2 AND rt.ratingStatus = 'P'
+    WHERE rt.ratedByID = $1 AND rt.ratedByType = $2 AND rt.ratingStatus = 'P'
     ORDER BY rt.id DESC;
     `;
 
