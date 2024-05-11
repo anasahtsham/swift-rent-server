@@ -92,7 +92,10 @@ export const login = async (req, res) => {
     if (user.isbanned) {
       return res
         .status(401)
-        .json({ error: "You are banned from using SwiftRent" });
+        .json({
+          error:
+            "You are banned from using SwiftRent. Contact Admin swiftrent2023@gmail.com",
+        });
     }
 
     // Return the user ID, userType, and success status
@@ -312,6 +315,6 @@ export const checkBan = async (req, res) => {
     return res.status(200).json({ isBanned: user.rows[0].isbanned });
   } catch (error) {
     console.error("Error in checkBan controller:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "User Not Found!" });
   }
 };

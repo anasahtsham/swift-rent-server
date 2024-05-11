@@ -188,7 +188,6 @@ export const acceptLease = async (req, res) => {
       SELECT
         pl.propertyID,
         pl.tenantID,
-        pl.managerID,
         pl.rent,
         pl.dueDate,
         pl.fine,
@@ -242,13 +241,12 @@ export const acceptLease = async (req, res) => {
 
     // Insert into TenantRentNotice
     const insertNoticeQuery = `
-      INSERT INTO TenantRentNotice (propertyID, tenantID, managerID, rentAmount, dueDate, fine, paymentStatus)
-      VALUES ($1, $2, $3, $4, $5, $6, 'P');
+      INSERT INTO TenantRentNotice (propertyID, tenantID, rentAmount, dueDate, fine, paymentStatus)
+      VALUES ($1, $2, $3, $4, $5, 'P');
     `;
     await db.query(insertNoticeQuery, [
       propertyid,
       tenantid,
-      managerid,
       rentAmount,
       duedate,
       fine,

@@ -43,18 +43,30 @@ export const homeAnalytics = async (req, res) => {
     `;
 
     // Query to fetch current month report
-    const currentMonthReportQuery = `
+    const collectedAmountQuery = `
         SELECT 
-          SUM(trn.collectedAmount) AS rentsCollected,
-          SUM(mr.maintenanceCost) AS maintenanceCost,
-          COUNT(prop.id) AS totalProperties
+          SUM(trn.collectedAmount) AS rentsCollected
         FROM OwnerRentTransaction trn
         JOIN Property prop ON trn.propertyID = prop.id
-        LEFT JOIN MaintenanceReport mr ON prop.id = mr.propertyID
         WHERE prop.ownerID = $1
         AND DATE_PART('month', trn.collectedOn) = $2
         AND DATE_PART('year', trn.collectedOn) = $3;
-      `;
+    `;
+    const maintenanceCostQuery = `
+        SELECT 
+          SUM(mr.maintenanceCost) AS maintenanceCost
+        FROM Property prop
+        JOIN MaintenanceReport mr ON prop.id = mr.propertyID
+        WHERE prop.ownerID = $1
+        AND DATE_PART('month', mr.createdOn) = $2
+        AND DATE_PART('year', mr.createdOn) = $3;
+    `;
+    const totalPropertiesQuery = `
+        SELECT 
+          COUNT(prop.id) AS totalProperties
+        FROM Property prop
+        WHERE prop.ownerID = $1;
+    `;
 
     // Query to fetch past month reports list
     const pastMonthReportsQuery = `
@@ -79,26 +91,46 @@ export const homeAnalytics = async (req, res) => {
       currentMonth,
       currentYear,
     ]);
-    const currentMonthReportResult = await db.query(currentMonthReportQuery, [
+    const pastMonthReportsResult = await db.query(pastMonthReportsQuery, [
+      ownerID,
+    ]);
+    const currentCollectedAmountResult = await db.query(collectedAmountQuery, [
       ownerID,
       currentMonth,
       currentYear,
     ]);
-    const pastMonthReportsResult = await db.query(pastMonthReportsQuery, [
+    const currentMaintenanceCostResult = await db.query(maintenanceCostQuery, [
+      ownerID,
+      currentMonth,
+      currentYear,
+    ]);
+    const totalPropertiesResult = await db.query(totalPropertiesQuery, [
       ownerID,
     ]);
 
     // Extract results
     const pendingRents = pendingRentsResult.rows;
     const paidRents = paidRentsResult.rows;
-    const currentMonthReport = currentMonthReportResult.rows[0];
     const pastMonthReports = pastMonthReportsResult.rows;
 
     // Send the analytics as the response
     return res.status(200).json({
       pendingRents,
       paidRents,
-      currentMonthReport,
+      currentMonthReport: {
+        rentscollected:
+          currentCollectedAmountResult?.rows.length > 0
+            ? currentCollectedAmountResult.rows[0].rentscollected
+            : null,
+        maintenancecost:
+          currentMaintenanceCostResult?.rows.length > 0
+            ? currentMaintenanceCostResult.rows[0].maintenancecost
+            : null,
+        totalproperties:
+          totalPropertiesResult.rows?.length > 0
+            ? totalPropertiesResult.rows[0].totalproperties
+            : "0",
+      },
       pastMonthReports,
     });
   } catch (error) {
@@ -359,13 +391,14 @@ export const detailedAnalytics = async (req, res) => {
     } = complaintsStatisticsResult.rows[0];
 
     // Prepare graph data
+    // Prepare graph data
     const defaultArray = new Array(11).fill(0);
-
-    const monthNames = defaultArray
-      .map((_, index) =>
-        pastMonthReports[index] ? pastMonthReports[index].month : ""
-      )
-      .reverse();
+    const monthNames = [];
+    for (let i = 0; i < 11; i++) {
+      const date = new Date(currentYear, currentMonth - i - 2, 1);
+      const monthName = date.toLocaleString("default", { month: "short" });
+      monthNames.push(monthName);
+    }
 
     const totalCollectedRents = defaultArray
       .map((_, index) =>
