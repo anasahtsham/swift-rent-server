@@ -60,8 +60,6 @@ export const verifyOnlineRent = async (req, res) => {
       managersCut = (collectedAmount * managerscutvaluep) / 100;
     }
 
-    const amountSubmittedToOwner = collectedAmount - managersCut;
-
     // Update TenantRentNotice table
     const updateRentNoticeQuery = `
         UPDATE TenantRentNotice
@@ -73,15 +71,14 @@ export const verifyOnlineRent = async (req, res) => {
 
     // Create ManagerRentCollection entry
     const createCollectionQuery = `
-        INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentStatus)
-        VALUES ($1, $2, $3, $4, $5, 'P');
+        INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, paymentStatus)
+        VALUES ($1, $2, $3, $4, 'P');
       `;
     await db.query(createCollectionQuery, [
       rentNoticeID,
       managerID,
       collectedAmount,
       managersCut,
-      amountSubmittedToOwner,
     ]);
 
     // Get Property Address
@@ -188,19 +185,16 @@ export const collectRent = async (req, res) => {
       managersCut = (collectedAmount * managerscutvaluep) / 100;
     }
 
-    const amountSubmittedToOwner = collectedAmount - managersCut;
-
     // Create ManagerRentCollection entry
     const createCollectionQuery = `
-    INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, amountSubmittedToOwner, paymentStatus)
-    VALUES ($1, $2, $3, $4, $5, 'P');
+    INSERT INTO ManagerRentCollection (tenantRentNoticeID, managerID, collectedAmount, managersCut, paymentStatus)
+    VALUES ($1, $2, $3, $4, 'P');
       `;
     await db.query(createCollectionQuery, [
       rentNoticeID,
       managerID,
       collectedAmount,
       managersCut,
-      amountSubmittedToOwner,
     ]);
 
     // Update TenantRentNotice table

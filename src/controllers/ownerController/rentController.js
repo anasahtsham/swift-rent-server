@@ -56,10 +56,10 @@ export const verifyOnlineRent = async (req, res) => {
       // Update ManagerRentCollection
       const updateCollectionQuery = `
           UPDATE ManagerRentCollection
-          SET paymentStatus = 'C'
-          WHERE tenantRentNoticeID = $1;
+          SET paymentStatus = 'C', amountSubmittedToOwner = $1
+          WHERE tenantRentNoticeID = $2;
         `;
-      await db.query(updateCollectionQuery, [rentNoticeID]);
+      await db.query(updateCollectionQuery, [collectedAmount, rentNoticeID]);
 
       // Create OwnerRentTransaction
       const createTransactionQuery = `
@@ -239,10 +239,11 @@ export const collectRent = async (req, res) => {
       // Update ManagerRentCollection
       const updateCollectionQuery = `
         UPDATE ManagerRentCollection
-        SET paymentStatus = 'C', paymentType = 'C', paymentOn = CURRENT_TIMESTAMP
-        WHERE tenantRentNoticeID = $1;
+        SET paymentStatus = 'C', paymentType = 'C', 
+        paymentOn = CURRENT_TIMESTAMP, amountSubmittedToOwner = $1
+        WHERE tenantRentNoticeID = $2;
       `;
-      await db.query(updateCollectionQuery, [rentNoticeID]);
+      await db.query(updateCollectionQuery, [collectedAmount, rentNoticeID]);
 
       // Create OwnerRentTransaction
       const createTransactionQuery = `
