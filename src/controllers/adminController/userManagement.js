@@ -15,7 +15,7 @@ export const userList = async (req, res) => {
              isTenant, 
              isOwner, 
              isBanned, 
-             registeredOn
+             TO_CHAR(registeredOn, 'DD-MM-YYYY HH24:MI:SS') AS registeredOn 
       FROM UserInformation
       ORDER BY id DESC;
     `;
