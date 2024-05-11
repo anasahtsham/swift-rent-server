@@ -100,6 +100,7 @@ export const viewManagerHireCounterRequests = async (req, res) => {
     const query = `
       SELECT MHC.id,
              CONCAT(UI.firstName, ' ', UI.lastName) AS "managerName",
+             UI.id as managerID,
              MHC.oneTimePay,
              MHC.salaryFixed,
              MHC.salaryPercentage,
@@ -689,6 +690,41 @@ export const fireManager = async (req, res) => {
     );
     const managerHireRequestID = managerHireRequestIDResult.rows[0].id;
 
+    // Retrieve current month's rent status
+    const rentStatusQuery = `
+        SELECT tn.id, tn.paymentStatus
+        FROM TenantRentNotice tn
+        WHERE tn.propertyID = $1 AND 
+              EXTRACT(MONTH FROM tn.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
+              EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+      `;
+    const rentStatusResult = await db.query(rentStatusQuery, [propertyID]);
+    const rentStatus = rentStatusResult.rows[0];
+    const tenantRentNoticeID = rentStatus?.id;
+
+    // Calculate total income
+    const totalIncomeQuery = `
+        SELECT paymentStatus
+        FROM ManagerRentCollection
+        WHERE tenantRentNoticeID = $1;
+      `;
+    const totalIncomeResult = await db.query(totalIncomeQuery, [
+      tenantRentNoticeID,
+    ]);
+    const ManagerPaymentStatus = totalIncomeResult.rows[0];
+    console.log(ManagerPaymentStatus);
+
+    // if manager payment status is 'P' or 'V' then return error
+
+    if (
+      ManagerPaymentStatus?.paymentstatus === "P" ||
+      ManagerPaymentStatus?.paymentstatus === "V"
+    ) {
+      return res.status(400).json({
+        success: "Manager has tenant's rent with him, cannot fire manager.",
+      });
+    }
+
     // Update the managerStatus to 'T' in ManagerHireRequest table
     const updateManagerStatusQuery = `
       UPDATE ManagerHireRequest
@@ -770,8 +806,7 @@ export const fireManager = async (req, res) => {
     const propertyIDQuery = `
       SELECT purpose
       FROM ManagerHireRequest
-      WHERE id = $1
-      );
+      WHERE id = $1;
     `;
     const propertyIDResult = await db.query(propertyIDQuery, [
       managerHireRequestID,

@@ -7,21 +7,23 @@ export const fetchMyRatings = async (req, res) => {
 
     // Query to fetch ratings given to the user
     const query = `
-    SELECT 
-        rt.id,
-        CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
-        CONCAT(ui.firstName, ' ', ui.lastName) AS raterName,
-        rt.ratingStars,
-        rt.ratingOpinon,
-        rt.ratingComment,
-        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn
-    FROM Rating rt
-    JOIN Property p ON rt.propertyID = p.id
-    JOIN Area a ON p.areaID = a.id
-    JOIN City c ON a.cityID = c.id
-    JOIN UserInformation ui ON rt.ratedByID = ui.id
-    WHERE rt.userID = $1 AND rt.userType = $2 AND rt.ratingStatus = 'R'
-    ORDER BY rt.id DESC;
+      SELECT 
+          rt.id,
+          CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
+          CONCAT(ui.firstName, ' ', ui.lastName) AS userName,
+          rt.ratedbyType As userType,
+          rt.ratingStars,
+          rt.ratingOpinon,
+          rt.ratingComment,
+          TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn,
+          EXTRACT(DAY FROM AGE(COALESCE(rt.ratingEndDate, CURRENT_TIMESTAMP), rt.ratingStartDate)) AS contractDays
+      FROM Rating rt
+      JOIN Property p ON rt.propertyID = p.id
+      JOIN Area a ON p.areaID = a.id
+      JOIN City c ON a.cityID = c.id
+      JOIN UserInformation ui ON rt.ratedByID = ui.id
+      WHERE rt.userID = $1 AND rt.userType = $2 AND rt.ratingStatus = 'R'
+      ORDER BY rt.id DESC;
     `;
 
     // Execute the query
@@ -49,11 +51,13 @@ export const fetchGivenRatings = async (req, res) => {
     SELECT 
         rt.id,
         CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
-        CONCAT(ui.firstName, ' ', ui.lastName) AS rateeName,
+        CONCAT(ui.firstName, ' ', ui.lastName) AS userName,
+        rt.userType As userType,
         rt.ratingStars,
         rt.ratingOpinon,
         rt.ratingComment,
-        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn
+        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn,
+        EXTRACT(DAY FROM AGE(COALESCE(rt.ratingEndDate, CURRENT_TIMESTAMP), rt.ratingStartDate)) AS contractDays
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id
@@ -88,7 +92,9 @@ export const fetchPendingRatings = async (req, res) => {
     SELECT
         rt.id,
         CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS address,
-        CONCAT(ui.firstName, ' ', ui.lastName) AS rateeName,
+        CONCAT(ui.firstName, ' ', ui.lastName) AS userName,
+        rt.userType As userType,
+        rt.ratedbyType As raterType,
         TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MM') as ratingStartDate
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id

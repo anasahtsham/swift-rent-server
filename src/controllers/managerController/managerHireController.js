@@ -63,6 +63,7 @@ export const viewHireRequests = async (req, res) => {
     const query = `
       SELECT MHR.id,
              CONCAT(UI.firstName, ' ', UI.lastName) AS "ownerName",
+             UI.id AS ownerID,
              CONCAT(P.propertyAddress, ', ', A.areaName, ', ', C.cityName) AS "propertyAddress",
              MHR.purpose,
              MHC.counterRequestStatus
@@ -72,8 +73,8 @@ export const viewHireRequests = async (req, res) => {
       JOIN City C ON A.cityID = C.id
       JOIN UserInformation UI ON P.ownerID = UI.id
       LEFT JOIN ManagerHireCounterRequest MHC ON MHR.id = MHC.managerHireRequestID
-                                                 AND MHC.managerID = $1
-                                                 AND MHC.counterRequestStatus IN ('P', 'I')
+             AND MHC.managerID = $1
+             AND MHC.counterRequestStatus IN ('P', 'I')
       WHERE MHR.managerStatus = 'P'
       AND P.ownerID != $1
       ORDER BY MHC.counterRequestStatus ASC, MHR.id DESC;

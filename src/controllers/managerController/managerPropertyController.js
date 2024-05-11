@@ -86,6 +86,7 @@ export const fetchPropertyDetail = async (req, res) => {
     const totalIncomeResult = await db.query(totalIncomeQuery, [
       tenantRentNoticeID,
     ]);
+    const paymentStatus = totalIncomeResult.rows[0];
 
     // Part 4: Get total Income for Manager
     const managerRentCollectionForPropertyQuery = `
@@ -102,7 +103,6 @@ export const fetchPropertyDetail = async (req, res) => {
 
     const totalIncome =
       managerRentCollectionForPropertyResult.rows[0].totalincome || 0;
-    const paymentStatus = totalIncomeResult.rows[0];
 
     // Part 4: Retrieve lease information
     const leaseQuery = `
