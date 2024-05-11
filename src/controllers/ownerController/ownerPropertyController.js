@@ -799,8 +799,8 @@ export const fetchPropertyDetail = async (req, res) => {
           currentMonthRentStatus?.managerpaymentstatus === "P",
         verifyOnlineRent:
           currentMonthRentStatus?.tenantpaymentstatus === "V" ||
-          (currentMonthRentStatus?.managerpaymentstatus === "P" &&
-            currentMonthRentStatus?.tenantpaymentstatus !== "C"),
+          (currentMonthRentStatus?.managerpaymentstatus === "V" &&
+            currentMonthRentStatus?.tenantpaymentstatus === "C"),
       },
     };
 

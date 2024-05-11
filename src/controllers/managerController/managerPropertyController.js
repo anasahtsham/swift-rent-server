@@ -67,7 +67,7 @@ export const fetchPropertyDetail = async (req, res) => {
 
     // Part 2: Retrieve current month's rent status
     const rentStatusQuery = `
-      SELECT tn.paymentStatus
+      SELECT tn.id, tn.paymentStatus
       FROM TenantRentNotice tn
       WHERE tn.propertyID = $1 AND 
             EXTRACT(MONTH FROM tn.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
@@ -75,15 +75,34 @@ export const fetchPropertyDetail = async (req, res) => {
     `;
     const rentStatusResult = await db.query(rentStatusQuery, [propertyID]);
     const rentStatus = rentStatusResult.rows[0];
+    const tenantRentNoticeID = rentStatus?.id;
 
     // Part 3: Calculate total income
     const totalIncomeQuery = `
-      SELECT SUM(managersCut) AS totalIncome
+      SELECT paymentStatus
       FROM ManagerRentCollection
-      WHERE managerID = $1;
+      WHERE tenantRentNoticeID = $1;
     `;
-    const totalIncomeResult = await db.query(totalIncomeQuery, [managerID]);
-    const totalIncome = totalIncomeResult.rows[0].totalincome || 0;
+    const totalIncomeResult = await db.query(totalIncomeQuery, [
+      tenantRentNoticeID,
+    ]);
+
+    // Part 4: Get total Income for Manager
+    const managerRentCollectionForPropertyQuery = `
+      SELECT SUM(mrc.managersCut) AS totalIncome
+      FROM ManagerRentCollection mrc
+      JOIN TenantRentNotice trn ON mrc.tenantRentNoticeID = trn.id
+      WHERE trn.propertyID = $1;
+    `;
+
+    const managerRentCollectionForPropertyResult = await db.query(
+      managerRentCollectionForPropertyQuery,
+      [propertyID]
+    );
+
+    const totalIncome =
+      managerRentCollectionForPropertyResult.rows[0].totalincome || 0;
+    const paymentStatus = totalIncomeResult.rows[0];
 
     // Part 4: Retrieve lease information
     const leaseQuery = `
@@ -140,8 +159,8 @@ export const fetchPropertyDetail = async (req, res) => {
       buttons: {
         collectRent: rentStatus ? rentStatus?.paymentstatus === "T" : null,
         verifyOnlineRent: rentStatus ? rentStatus?.paymentstatus === "V" : null,
-        submitVerificationRequest: rentStatus
-          ? rentStatus?.paymentstatus === "P"
+        submitVerificationRequest: paymentStatus
+          ? paymentStatus?.paymentstatus === "P"
           : null,
       },
     };
