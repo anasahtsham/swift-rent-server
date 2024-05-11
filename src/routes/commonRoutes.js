@@ -31,6 +31,6 @@ commonRouter.post(
 commonRouter.post("/submit-rating", ratingController.submitRating); //11
 commonRouter.post("/rent-history", commonController.rentHistory); //12
 
-// Total APIs: 11
+// Total APIs: 12
 
 export default commonRouter;

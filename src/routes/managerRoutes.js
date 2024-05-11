@@ -39,6 +39,6 @@ managerRouter.post(
   rentController.submitManagerVerificationRequest
 ); //10
 
-// Total APIs: 9
+// Total APIs: 10
 
 export default managerRouter;

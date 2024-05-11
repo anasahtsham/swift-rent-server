@@ -41,8 +41,8 @@ adminRouter.get(
 adminRouter.get("/line-graph", analytics.lineGraph); //22
 //Property Management
 //viewPropertyList
-adminRouter.get("/view-property-list", propertyManagement.viewPropertyList); //22
+adminRouter.get("/view-property-list", propertyManagement.viewPropertyList); //23
 
-//Total adminRouter routes: 21
+//Total adminRouter routes: 23
 
 export default adminRouter;
