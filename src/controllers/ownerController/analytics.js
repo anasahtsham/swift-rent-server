@@ -52,6 +52,19 @@ export const homeAnalytics = async (req, res) => {
         AND DATE_PART('month', trn.collectedOn) = $2
         AND DATE_PART('year', trn.collectedOn) = $3;
     `;
+    // returned money query
+    const returnedMoneyQuery = `
+      SELECT SUM(tl.moneyReturned) AS totalReturnedMoney
+      FROM TerminateLease tl
+      JOIN PropertyLease pl ON tl.propertyLeaseID = pl.id
+      JOIN Property p ON pl.propertyID = p.id
+      WHERE p.ownerID = $1
+      AND DATE_PART('month', tl.terminationDate) = DATE_PART('month', CURRENT_DATE)
+      AND DATE_PART('year', tl.terminationDate) = DATE_PART('year', CURRENT_DATE);
+    `;
+    const returnedMoneyResult = await db.query(returnedMoneyQuery, [ownerID]);
+    const returnedMoney = returnedMoneyResult.rows[0].totalreturnedmoney || 0;
+
     const maintenanceCostQuery = `
         SELECT 
           SUM(mr.maintenanceCost) AS maintenanceCost
@@ -120,7 +133,8 @@ export const homeAnalytics = async (req, res) => {
       currentMonthReport: {
         rentscollected:
           currentCollectedAmountResult?.rows.length > 0
-            ? currentCollectedAmountResult.rows[0].rentscollected
+            ? currentCollectedAmountResult.rows[0].rentscollected -
+              returnedMoney
             : null,
         maintenancecost:
           currentMaintenanceCostResult?.rows.length > 0
@@ -278,14 +292,15 @@ export const detailedAnalytics = async (req, res) => {
     // Query to fetch rents collected for current month
     const rentsCollectedCurrentMonthQuery = `
         SELECT 
-          SUM(trn.collectedAmount) AS rentsCollected
+          (SUM(trn.collectedAmount) - COALESCE((SELECT SUM(moneyReturned) 
+        FROM TerminateLease term 
+        WHERE DATE_PART('month', term.terminationDate) = $2 
+        AND DATE_PART('year', term.terminationDate) = $3), 0)) AS rentsCollected
         FROM OwnerRentTransaction trn
         JOIN Property prop ON trn.propertyID = prop.id
-        LEFT JOIN TerminateLease term ON trn.id = term.propertyLeaseID
         WHERE prop.ownerID = $1
         AND DATE_PART('month', trn.collectedOn) = $2
-        AND DATE_PART('year', trn.collectedOn) = $3
-        AND term.id IS NULL;
+        AND DATE_PART('year', trn.collectedOn) = $3;
       `;
 
     // Query to fetch maintenance costs for current month
