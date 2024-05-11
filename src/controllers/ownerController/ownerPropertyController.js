@@ -700,7 +700,7 @@ export const fetchPropertyDetail = async (req, res) => {
              mhr.whoBringsTenant, mhr.rent, mhr.specialCondition, mhr.needHelpWithLegalWork
       FROM ManagerHireRequest mhr
       INNER JOIN UserInformation ui3 ON mhr.managerID = ui3.id
-      WHERE mhr.propertyID = $1;
+      WHERE mhr.propertyID = $1 AND mhr.managerStatus = 'A';
     `;
     const managerContractResult = await db.query(managerContractQuery, [
       propertyID,

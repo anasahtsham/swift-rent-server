@@ -712,8 +712,6 @@ export const fireManager = async (req, res) => {
       tenantRentNoticeID,
     ]);
     const ManagerPaymentStatus = totalIncomeResult.rows[0];
-    console.log(ManagerPaymentStatus);
-
     // if manager payment status is 'P' or 'V' then return error
 
     if (
