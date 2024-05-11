@@ -189,7 +189,7 @@ export const lineGraph = async (req, res) => {
         date.getFullYear(),
       ]);
       complaintsData.push({
-        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        x: `${month} ${date.getFullYear()}`,
         y: parseInt(complaintsResult.rows[0].count) || 0,
       });
 
@@ -205,7 +205,7 @@ export const lineGraph = async (req, res) => {
         date.getFullYear(),
       ]);
       propertiesData.push({
-        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        x: `${month} ${date.getFullYear()}`,
         y: parseInt(propertiesResult.rows[0].count) || 0,
       });
 
@@ -221,7 +221,7 @@ export const lineGraph = async (req, res) => {
         date.getFullYear(),
       ]);
       usersData.push({
-        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        x: `${month} ${date.getFullYear()}`,
         y: parseInt(usersResult.rows[0].count) || 0,
       });
 
@@ -237,7 +237,7 @@ export const lineGraph = async (req, res) => {
         date.getFullYear(),
       ]);
       websiteVisitsData.push({
-        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        x: `${month} ${date.getFullYear()}`,
         y: parseInt(websiteVisitsResult.rows[0].count) || 0,
       });
     }
