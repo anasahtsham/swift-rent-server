@@ -71,3 +71,84 @@ export const getUserNotifications = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// API 3: User Rent History
+export const rentHistory = async (req, res) => {
+  try {
+    const { userID, userType, propertyID } = req.body;
+    let rentHistory = [];
+
+    // Check user type and perform appropriate query
+    if (userType === "O") {
+      // For Owner
+      const ownerRentTransactionQuery = `
+        SELECT 
+          id,
+          collectedAmount,
+          TO_CHAR(collectedOn, 'DD-MM-YYYY HH24:MM') AS collectedOn
+        FROM OwnerRentTransaction
+        WHERE propertyID = $1
+        ORDER BY id DESC;
+      `;
+      const { rows } = await db.query(ownerRentTransactionQuery, [propertyID]);
+      rentHistory = rows;
+    } else if (userType === "M") {
+      // For Manager
+      const managerRentCollectionQuery = `
+        SELECT 
+          id,
+          collectedAmount, 
+          TO_CHAR(collectionDate, 'DD-MM-YYYY HH24:MM') AS collectedOn, 
+          managersCut, 
+          amountSubmittedToOwner as submittedAmount,
+          TO_CHAR(paymentOn, 'DD-MM-YYYY HH24:MM') AS submittedOn
+        FROM ManagerRentCollection
+        WHERE tenantRentNoticeID IN (
+          SELECT id
+          FROM TenantRentNotice
+          WHERE propertyID = $1
+        )
+        AND paymentStatus = 'C'
+        ORDER BY id DESC;
+      `;
+      const { rows } = await db.query(managerRentCollectionQuery, [propertyID]);
+      rentHistory = rows;
+    } else if (userType === "T") {
+      // For Tenant
+      const tenantRentTransactionQuery = `
+        SELECT
+          id, 
+          submittedAmount,
+          TO_CHAR(paymentOn, 'DD-MM-YYYY HH24:MM') AS submittedOn
+        FROM TenantRentNotice
+        WHERE propertyID = $1
+        AND paymentStatus = 'C'
+        ORDER BY id DESC;
+      `;
+      // const tenantRentTransactionQuery = `
+      //   SELECT
+      //     ort.collectedAmount,
+      //     TO_CHAR(ort.collectedOn, 'DD-MM-YYYY') AS collectedOn
+      //   FROM OwnerRentTransaction ort
+      //   JOIN TenantRentNotice trn ON ort.tenantRentNoticeID = trn.id
+      //   WHERE trn.propertyID = $1
+      //   AND ort.paymentStatus = 'C';
+      // `;
+      const { rows } = await db.query(tenantRentTransactionQuery, [propertyID]);
+      rentHistory = rows;
+    }
+
+    // Send the rent history as the response
+    return res.status(200).json({
+      success: true,
+      rentHistory,
+    });
+  } catch (error) {
+    console.error("Error fetching rent history:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch rent history.",
+      message: error.message,
+    });
+  }
+};
