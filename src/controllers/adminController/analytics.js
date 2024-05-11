@@ -157,3 +157,125 @@ export const getPropertyTypesPerCityAnalytics = async (req, res) => {
     });
   }
 };
+
+// API 4: Line Graph
+export const lineGraph = async (req, res) => {
+  try {
+    // Initialize data arrays
+    const complaintsData = [];
+    const propertiesData = [];
+    const usersData = [];
+    const websiteVisitsData = [];
+
+    // Get current date and time
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // Month is zero-indexed
+    const currentYear = currentDate.getFullYear();
+
+    // Get data for the past 12 months
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentYear, currentMonth - i - 1, 1); // First day of the month
+      const month = date.toLocaleString("default", { month: "short" }); // Get month name abbreviation
+
+      // Query to get complaints count per month
+      const complaintsQuery = `
+        SELECT COUNT(*) AS count
+        FROM Complaint
+        WHERE EXTRACT(MONTH FROM createdOn) = $1
+        AND EXTRACT(YEAR FROM createdOn) = $2;
+      `;
+      const complaintsResult = await db.query(complaintsQuery, [
+        date.getMonth() + 1,
+        date.getFullYear(),
+      ]);
+      complaintsData.push({
+        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        y: parseInt(complaintsResult.rows[0].count) || 0,
+      });
+
+      // Query to get properties count per month
+      const propertiesQuery = `
+        SELECT COUNT(*) AS count
+        FROM Property
+        WHERE EXTRACT(MONTH FROM registeredOn) = $1
+        AND EXTRACT(YEAR FROM registeredOn) = $2;
+      `;
+      const propertiesResult = await db.query(propertiesQuery, [
+        date.getMonth() + 1,
+        date.getFullYear(),
+      ]);
+      propertiesData.push({
+        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        y: parseInt(propertiesResult.rows[0].count) || 0,
+      });
+
+      // Query to get users count per month
+      const usersQuery = `
+        SELECT COUNT(*) AS count
+        FROM UserInformation
+        WHERE EXTRACT(MONTH FROM registeredOn) = $1
+        AND EXTRACT(YEAR FROM registeredOn) = $2;
+      `;
+      const usersResult = await db.query(usersQuery, [
+        date.getMonth() + 1,
+        date.getFullYear(),
+      ]);
+      usersData.push({
+        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        y: parseInt(usersResult.rows[0].count) || 0,
+      });
+
+      // Query to get website visits count per month
+      const websiteVisitsQuery = `
+        SELECT COUNT(*) AS count
+        FROM WebsiteLog
+        WHERE EXTRACT(MONTH FROM logOn) = $1
+        AND EXTRACT(YEAR FROM logOn) = $2;
+      `;
+      const websiteVisitsResult = await db.query(websiteVisitsQuery, [
+        date.getMonth() + 1,
+        date.getFullYear(),
+      ]);
+      websiteVisitsData.push({
+        x: `${month} ${currentYear - Math.floor((currentMonth - i - 1) / 12)}`,
+        y: parseInt(websiteVisitsResult.rows[0].count) || 0,
+      });
+    }
+
+    // Prepare the output
+    const output = [
+      {
+        id: "Website Visits",
+        color: "hsl(223, 90%, 35%)",
+        data: websiteVisitsData.reverse(),
+      },
+      {
+        id: "Registered Users",
+        color: "hsl(218, 90%, 45%)",
+        data: usersData.reverse(),
+      },
+      {
+        id: "Properties",
+        color: "hsl(218, 90%, 55%)",
+        data: propertiesData.reverse(),
+      },
+      {
+        id: "Complaints",
+        color: "hsl(226, 90%, 70%)",
+        data: complaintsData.reverse(),
+      },
+    ];
+
+    // Send the output
+    return res.status(200).json({
+      data: output,
+    });
+  } catch (error) {
+    console.error("Error fetching line graph data:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch line graph data.",
+      message: error.message,
+    });
+  }
+};

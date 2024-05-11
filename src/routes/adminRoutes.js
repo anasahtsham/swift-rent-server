@@ -37,6 +37,8 @@ adminRouter.get(
   "/h-s-bar-graph-analytics",
   analytics.getPropertyTypesPerCityAnalytics
 ); //21
+//lineGraph
+adminRouter.get("/line-graph", analytics.lineGraph); //22
 //Property Management
 //viewPropertyList
 adminRouter.get("/view-property-list", propertyManagement.viewPropertyList); //22
