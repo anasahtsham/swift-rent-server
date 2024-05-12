@@ -160,3 +160,42 @@ export const submitRating = async (req, res) => {
     });
   }
 };
+
+// API 5: Edit Rating
+export const editRating = async (req, res) => {
+  try {
+    const { ratingID, ratingStars, ratingOpinon, ratingComment } = req.body;
+
+    // Check if the variables are not empty
+    if (!ratingID || !ratingStars || !ratingOpinon || !ratingComment) {
+      return res.status(400).json({
+        success: "Please fill all the fields.",
+      });
+    }
+
+    // Query to update the rating
+    const query = `
+    UPDATE Rating
+    SET
+        ratingStars = $1,
+        ratingOpinon = $2,
+        ratingComment = $3,
+        ratedOn = CURRENT_TIMESTAMP
+    WHERE id = $4;
+    `;
+
+    // Execute the query
+    await db.query(query, [ratingStars, ratingOpinon, ratingComment, ratingID]);
+
+    // Send the success response
+    return res.status(200).json({
+      success: "Rating updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating rating:", error);
+    return res.status(500).json({
+      success: "Failed to update rating.",
+      message: error.message,
+    });
+  }
+};

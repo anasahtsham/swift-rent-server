@@ -821,3 +821,47 @@ export const fetchPropertyDetail = async (req, res) => {
     });
   }
 };
+
+//API 7: Delete Property
+export const deleteProperty = async (req, res) => {
+  const { propertyID } = req.body;
+
+  try {
+    // Check if the property has a manager or tenant associated with it
+    const checkQuery = `
+      SELECT managerID, tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const checkResult = await db.query(checkQuery, [propertyID]);
+
+    if (checkResult.rows.length > 0) {
+      // If there is a manager or tenant associated with the property, do not delete
+      return res.status(400).json({
+        success: false,
+        error:
+          "Property cannot be deleted as it is associated with a manager or tenant.",
+      });
+    } else {
+      // No manager or tenant associated, safe to delete the property
+      const deleteQuery = `
+        UPDATE Property
+        SET propertyStatus = 'D'
+        WHERE id = $1;
+      `;
+      await db.query(deleteQuery, [propertyID]);
+
+      return res.status(200).json({
+        success: true,
+        message: "Property deleted successfully.",
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting property:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to delete property.",
+      message: error.message,
+    });
+  }
+};

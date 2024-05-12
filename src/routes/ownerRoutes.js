@@ -12,61 +12,62 @@ ownerRouter.get("/fetch-property-data", ownerController.fetchPropertyData); //1
 ownerRouter.post("/add-property", ownerController.addProperty); //2
 ownerRouter.post("/fetch-property-list", ownerController.fetchPropertyList); //3
 ownerRouter.post("/fetch-property-detail", ownerController.fetchPropertyDetail); //4
+ownerRouter.post("/delete-property", ownerController.deleteProperty); //5
 
 //Tenant
-ownerRouter.post("/register-tenant", ownerController.registerTenant); //5
-ownerRouter.post("/terminate-tenant", ownerController.terminateTenant); //6
+ownerRouter.post("/register-tenant", ownerController.registerTenant); //6
+ownerRouter.post("/terminate-tenant", ownerController.terminateTenant); //7
 
 //Maintenance
 ownerRouter.post(
   "/generate-maintenance-report",
   maintenanceController.generateMaintenanceReport
-); //7
+); //8
 ownerRouter.post(
   "/display-maintenance-reports",
   maintenanceController.displayMaintenanceReport
-); //8
+); //9
 ownerRouter.post(
   "/display-all-maintenace-reports",
   maintenanceController.displayAllMaintenanceReports
-); //9
+); //10
 
 //Hire Manager
 ownerRouter.post(
   "/generate-hire-request",
   hireController.generateHiringRequest
-); //10
+); //11
 ownerRouter.post(
   "/delete-hire-request",
   hireController.deleteManagerHireRequest
-); //11
+); //12
 ownerRouter.post(
   "/view-counter-requests",
   hireController.viewManagerHireCounterRequests
-); //12
+); //13
 ownerRouter.post(
   "/reject-counter-request",
   hireController.rejectCounterRequest
-); //13
+); //14
 ownerRouter.post(
   "/interview-counter-request",
   hireController.inviteManagerForInterview
-); //14
+); //15
 ownerRouter.post(
   "/accept-counter-request",
   hireController.acceptCounterRequest
-); //15
-ownerRouter.post("/fire-manager", hireController.fireManager); //16
+); //16
+ownerRouter.post("/fire-manager", hireController.fireManager); //17
 
 //Rent
-ownerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //17
-ownerRouter.post("/collect-rent", rentController.collectRent); //18
+ownerRouter.post("/verify-online-rent", rentController.verifyOnlineRent); //18
+ownerRouter.post("/collect-rent", rentController.collectRent); //19
 
 //Analytics
-ownerRouter.post("/home-analytics", analyticsController.homeAnalytics); //19
-ownerRouter.post("/pending-list", analyticsController.pendingRentsList); //20
-ownerRouter.post("/paid-list", analyticsController.paidRentsList); //21
-ownerRouter.post("/detailed-analytics", analyticsController.detailedAnalytics); //22
+ownerRouter.post("/home-analytics", analyticsController.homeAnalytics); //20
+ownerRouter.post("/pending-list", analyticsController.pendingRentsList); //21
+ownerRouter.post("/paid-list", analyticsController.paidRentsList); //22
+ownerRouter.post("/detailed-analytics", analyticsController.detailedAnalytics); //23
 
 // Total APIs: 22
 
