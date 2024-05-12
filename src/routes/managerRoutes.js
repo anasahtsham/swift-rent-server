@@ -38,7 +38,9 @@ managerRouter.post(
   "/submit-verification-request",
   rentController.submitManagerVerificationRequest
 ); //10
+managerRouter.post("/pending-list", rentController.pendingRentsList); //11
+managerRouter.post("/paid-list", rentController.paidRentsList); //12
 
-// Total APIs: 10
+// Total APIs: 12
 
 export default managerRouter;

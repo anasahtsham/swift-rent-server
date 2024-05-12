@@ -357,3 +357,145 @@ export const submitManagerVerificationRequest = async (req, res) => {
     });
   }
 };
+
+// API 4: Pending Rents List
+export const pendingRentsList = async (req, res) => {
+  try {
+    const { managerID } = req.body;
+
+    // Get current month and year
+    const currentDate = new Date();
+    const currentMonth = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+    const currentYear = currentDate.getFullYear().toString();
+
+    // Query to fetch properties managed by the manager
+    const managedPropertiesQuery = `
+      SELECT id
+      FROM Property
+      WHERE managerID = $1
+        AND propertyStatus = 'L'; -- Only active properties
+    `;
+    const managedPropertiesResult = await db.query(managedPropertiesQuery, [
+      managerID,
+    ]);
+
+    // Extract property IDs
+    const propertyIDs = managedPropertiesResult.rows.map((row) => row.id);
+
+    // Query to fetch pending rents for manager's properties
+    const pendingRentsQuery = `
+      SELECT
+          trn.propertyID as id,
+          trn.rentAmount,
+          TO_CHAR(trn.createdOn, 'DD-MM-YYYY') as createdOn,
+          ui.firstName || ' ' || ui.lastName as tenantName,
+          prop.propertyAddress || ', ' || area.areaName || ', ' || city.cityName as propertyAddress
+      FROM 
+          TenantRentNotice trn
+      JOIN 
+          Property prop ON trn.propertyID = prop.id
+      JOIN 
+          UserInformation ui ON trn.tenantID = ui.id
+      JOIN 
+          Area area ON prop.areaID = area.id
+      JOIN 
+          City city ON area.cityID = city.id
+      WHERE 
+          prop.id IN (${propertyIDs.join(",")})
+          AND trn.tenantID IS NOT NULL
+          AND (trn.paymentStatus = 'P' 
+            OR trn.paymentStatus = 'T' 
+            OR trn.paymentStatus = 'V')
+          AND DATE_PART('month', trn.createdOn) = $1
+          AND DATE_PART('year', trn.createdOn) = $2
+      ORDER BY trn.id DESC;
+    `;
+
+    // Execute query for pending rents
+    const pendingRentsResult = await db.query(pendingRentsQuery, [
+      currentMonth,
+      currentYear,
+    ]);
+
+    // Send pending rents as response
+    return res.status(200).json({
+      pendingRents: pendingRentsResult.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching pending rents for manager:", error);
+    return res.status(500).json({
+      error: "Failed to fetch pending rents for manager.",
+      message: error.message,
+    });
+  }
+};
+
+// API 5: Paid Rents List
+export const paidRentsList = async (req, res) => {
+  try {
+    const { managerID } = req.body;
+
+    // Get current month and year
+    const currentDate = new Date();
+    const currentMonth = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+    const currentYear = currentDate.getFullYear().toString();
+
+    // Query to fetch properties managed by the manager
+    const managedPropertiesQuery = `
+      SELECT id
+      FROM Property
+      WHERE managerID = $1
+        AND propertyStatus = 'L'; -- Only active properties
+    `;
+    const managedPropertiesResult = await db.query(managedPropertiesQuery, [
+      managerID,
+    ]);
+
+    // Extract property IDs
+    const propertyIDs = managedPropertiesResult.rows.map((row) => row.id);
+
+    // Query to fetch paid rents for manager's properties
+    const paidRentsQuery = `
+      SELECT
+          trn.propertyID as id,
+          trn.rentAmount,
+          TO_CHAR(trn.createdOn, 'DD-MM-YYYY') as createdOn,
+          ui.firstName || ' ' || ui.lastName as tenantName,
+          prop.propertyAddress || ', ' || area.areaName || ', ' || city.cityName as propertyAddress
+      FROM 
+          TenantRentNotice trn
+      JOIN 
+          Property prop ON trn.propertyID = prop.id
+      JOIN 
+          UserInformation ui ON trn.tenantID = ui.id
+      JOIN 
+          Area area ON prop.areaID = area.id
+      JOIN 
+          City city ON area.cityID = city.id
+      WHERE 
+          prop.id IN (${propertyIDs.join(",")})
+          AND trn.tenantID IS NOT NULL
+          AND trn.paymentStatus = 'C'
+          AND DATE_PART('month', trn.createdOn) = $1
+          AND DATE_PART('year', trn.createdOn) = $2
+      ORDER BY trn.id DESC;
+    `;
+
+    // Execute query for paid rents
+    const paidRentsResult = await db.query(paidRentsQuery, [
+      currentMonth,
+      currentYear,
+    ]);
+
+    // Send paid rents as response
+    return res.status(200).json({
+      paidRents: paidRentsResult.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching paid rents for manager:", error);
+    return res.status(500).json({
+      error: "Failed to fetch paid rents for manager.",
+      message: error.message,
+    });
+  }
+};
