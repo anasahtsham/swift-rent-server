@@ -45,6 +45,7 @@ export const listOfRentals = async (req, res) => {
   }
 };
 
+//API 2: Fetch Property Detail
 export const fetchPropertyDetail = async (req, res) => {
   try {
     // Extract tenantID and propertyID from request parameters
@@ -111,9 +112,9 @@ export const fetchPropertyDetail = async (req, res) => {
         pl.advancePaymentForMonths
       FROM PropertyLease pl
       JOIN UserInformation uir ON pl.registeredByID = uir.id
-      WHERE pl.propertyID = $1;
+      WHERE pl.propertyID = $1 AND pl.tenantID = $2 AND pl.leaseStatus = 'A';
     `;
-    const leaseResult = await db.query(leaseQuery, [propertyID]);
+    const leaseResult = await db.query(leaseQuery, [propertyID, tenantID]);
     const lease = leaseResult.rows[0];
 
     // Construct response object

@@ -85,7 +85,7 @@ export const rentHistory = async (req, res) => {
         SELECT 
           id,
           collectedAmount,
-          TO_CHAR(collectedOn, 'DD-MM-YYYY HH24:MM') AS collectedOn
+          TO_CHAR(collectedOn, 'DD-MM-YYYY HH24:MI') AS collectedOn
         FROM OwnerRentTransaction
         WHERE propertyID = $1
         ORDER BY id DESC;
@@ -97,19 +97,19 @@ export const rentHistory = async (req, res) => {
       const managerRentCollectionQuery = `
         SELECT 
           id,
-          collectedAmount, 
-          TO_CHAR(collectionDate, 'DD-MM-YYYY HH24:MM') AS collectedOn, 
-          managersCut, 
-          amountSubmittedToOwner as submittedAmount,
-          TO_CHAR(paymentOn, 'DD-MM-YYYY HH24:MM') AS submittedOn
-        FROM ManagerRentCollection
+          MRC.collectedAmount, 
+          TO_CHAR(MRC.collectionDate, 'DD-MM-YYYY HH24:MI') AS collectedOn, 
+          MRC.managersCut, 
+          MRC.amountSubmittedToOwner as submittedAmount,
+          TO_CHAR(MRC.paymentOn, 'DD-MM-YYYY HH24:MI') AS submittedOn
+        FROM ManagerRentCollection MRC
         WHERE tenantRentNoticeID IN (
           SELECT id
           FROM TenantRentNotice
           WHERE propertyID = $1
         )
         AND paymentStatus = 'C'
-        ORDER BY id DESC;
+        ORDER BY MRC.id DESC;
       `;
       const { rows } = await db.query(managerRentCollectionQuery, [propertyID]);
       rentHistory = rows;
@@ -119,7 +119,7 @@ export const rentHistory = async (req, res) => {
         SELECT
           id, 
           submittedAmount,
-          TO_CHAR(paymentOn, 'DD-MM-YYYY HH24:MM') AS submittedOn
+          TO_CHAR(paymentOn, 'DD-MM-YYYY HH24:MI') AS submittedOn
         FROM TenantRentNotice
         WHERE propertyID = $1
         AND paymentStatus = 'C'

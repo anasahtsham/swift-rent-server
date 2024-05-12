@@ -667,7 +667,8 @@ export const fetchPropertyDetail = async (req, res) => {
       ) AS propertyAddress, 
       TO_CHAR(p.registeredOn, 'DD-MM-YYYY') AS registeredOn, 
       p.onRentDays, 
-      p.offRentDays
+      p.offRentDays,
+      p.managerID
       FROM Property p
       JOIN Area a ON p.areaID = a.id
       JOIN City c ON a.cityID = c.id
@@ -675,6 +676,7 @@ export const fetchPropertyDetail = async (req, res) => {
     `;
     const propertyResult = await db.query(propertyQuery, [ownerID, propertyID]);
     const property = propertyResult.rows[0];
+    const managerCheck = property?.managerid;
 
     // Part 2: Retrieve lease information
     const leaseQuery = `
@@ -795,10 +797,12 @@ export const fetchPropertyDetail = async (req, res) => {
       buttons: {
         managerOffers: managerOffers,
         collectRent:
-          currentMonthRentStatus?.tenantpaymentstatus === "T" ||
+          (currentMonthRentStatus?.tenantpaymentstatus === "T" &&
+            managerCheck === null) ||
           currentMonthRentStatus?.managerpaymentstatus === "P",
         verifyOnlineRent:
-          currentMonthRentStatus?.tenantpaymentstatus === "V" ||
+          (currentMonthRentStatus?.tenantpaymentstatus === "V" &&
+            managerCheck === null) ||
           (currentMonthRentStatus?.managerpaymentstatus === "V" &&
             currentMonthRentStatus?.tenantpaymentstatus === "C"),
       },

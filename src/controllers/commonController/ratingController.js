@@ -15,7 +15,7 @@ export const fetchMyRatings = async (req, res) => {
           rt.ratingStars,
           rt.ratingOpinon,
           rt.ratingComment,
-          TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn,
+          TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MI') as ratedOn,
           EXTRACT(DAY FROM AGE(COALESCE(rt.ratingEndDate, CURRENT_TIMESTAMP), rt.ratingStartDate)) AS contractDays
       FROM Rating rt
       JOIN Property p ON rt.propertyID = p.id
@@ -56,7 +56,7 @@ export const fetchGivenRatings = async (req, res) => {
         rt.ratingStars,
         rt.ratingOpinon,
         rt.ratingComment,
-        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MM') as ratedOn,
+        TO_CHAR(rt.ratedOn, 'DD-MM-YYYY HH24:MI') as ratedOn,
         EXTRACT(DAY FROM AGE(COALESCE(rt.ratingEndDate, CURRENT_TIMESTAMP), rt.ratingStartDate)) AS contractDays
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
@@ -95,7 +95,7 @@ export const fetchPendingRatings = async (req, res) => {
         CONCAT(ui.firstName, ' ', ui.lastName) AS userName,
         rt.userType As userType,
         rt.ratedbyType As raterType,
-        TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MM') as ratingStartDate
+        TO_CHAR(rt.ratingStartDate, 'DD-MM-YYYY HH24:MI') as ratingStartDate
     FROM Rating rt
     JOIN Property p ON rt.propertyID = p.id
     JOIN Area a ON p.areaID = a.id

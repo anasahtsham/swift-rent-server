@@ -13,7 +13,7 @@ export const viewPropertyList = async (req, res) => {
           p.managerID AS managerID,
           CONCAT(m.firstName, ' ', m.lastName) AS managerName,
           CONCAT(p.propertyAddress, ', ', a.areaName, ', ', c.cityName) AS fullAddress,
-          TO_CHAR(p.registeredOn, 'DD-MM-YYYY HH24:MM') AS propertyRegisteredOn,
+          TO_CHAR(p.registeredOn, 'DD-MM-YYYY HH24:MI') AS propertyRegisteredOn,
           p.onRentDays AS propertyOnRentDays,
           p.offRentDays AS propertyOffRentDays,
           p.propertyStatus AS propertyStatus
