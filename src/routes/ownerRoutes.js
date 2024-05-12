@@ -69,6 +69,6 @@ ownerRouter.post("/pending-list", analyticsController.pendingRentsList); //21
 ownerRouter.post("/paid-list", analyticsController.paidRentsList); //22
 ownerRouter.post("/detailed-analytics", analyticsController.detailedAnalytics); //23
 
-// Total APIs: 22
+// Total APIs: 23
 
 export default ownerRouter;

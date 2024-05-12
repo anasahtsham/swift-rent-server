@@ -838,8 +838,7 @@ export const deleteProperty = async (req, res) => {
     if (checkResult.rows.length > 0) {
       // If there is a manager or tenant associated with the property, do not delete
       return res.status(400).json({
-        success: false,
-        error:
+        success:
           "Property cannot be deleted as it is associated with a manager or tenant.",
       });
     } else {
@@ -852,15 +851,13 @@ export const deleteProperty = async (req, res) => {
       await db.query(deleteQuery, [propertyID]);
 
       return res.status(200).json({
-        success: true,
-        message: "Property deleted successfully.",
+        success: "Property deleted successfully.",
       });
     }
   } catch (error) {
     console.error("Error deleting property:", error);
     return res.status(500).json({
-      success: false,
-      error: "Failed to delete property.",
+      success: "Failed to delete property.",
       message: error.message,
     });
   }
