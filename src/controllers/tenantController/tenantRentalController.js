@@ -74,13 +74,29 @@ export const fetchPropertyDetail = async (req, res) => {
       FROM TenantRentNotice
       WHERE tenantID = $1 AND propertyID = $2 AND
             EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
-            EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+            EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+      ORDER BY id DESC;
     `;
     const rentStatusResult = await db.query(rentStatusQuery, [
       tenantID,
       propertyID,
     ]);
-    const rentStatus = rentStatusResult.rows[0].paymentstatus;
+    const rentStatus = rentStatusResult.rows[0]?.paymentstatus;
+
+    // Retrieve current month's rent status
+    const rentStatusButtonQuery = `
+        SELECT paymentStatus
+        FROM TenantRentNotice
+        WHERE tenantID = $1 AND propertyID = $2 AND
+              EXTRACT(MONTH FROM createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
+              EXTRACT(YEAR FROM createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+              AND paymentStatus = 'P';
+      `;
+    const rentStatusButtonResult = await db.query(rentStatusButtonQuery, [
+      tenantID,
+      propertyID,
+    ]);
+    const rentStatusButton = rentStatusButtonResult.rows[0]?.paymentstatus;
 
     // Calculate total submitted rent
     const totalRentQuery = `
@@ -130,8 +146,8 @@ export const fetchPropertyDetail = async (req, res) => {
         leaseInformation: lease || {},
       },
       buttons: {
-        submitRentCollectionRequest: rentStatus === "P",
-        submitVerificationRequest: rentStatus === "P",
+        submitRentCollectionRequest: rentStatusButton === "P",
+        submitVerificationRequest: rentStatusButton === "P",
       },
     };
 

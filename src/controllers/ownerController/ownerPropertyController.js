@@ -717,7 +717,8 @@ export const fetchPropertyDetail = async (req, res) => {
       LEFT JOIN ManagerRentCollection mrc ON tn.id = mrc.tenantRentNoticeID
       WHERE tn.propertyID = $1 AND 
             EXTRACT(MONTH FROM tn.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
-            EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+            EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+            ORDER BY tn.id DESC;
     `;
     const currentMonthRentStatusResult = await db.query(
       currentMonthRentStatusQuery,
