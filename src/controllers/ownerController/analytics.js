@@ -21,7 +21,9 @@ export const homeAnalytics = async (req, res) => {
     WHERE 
         prop.ownerID = $1
         AND trn.tenantID IS NOT NULL
-        AND trn.paymentStatus = 'P'
+        AND (trn.paymentStatus = 'P' 
+          OR trn.paymentStatus = 'T' 
+          OR trn.paymentStatus = 'V')
         AND DATE_PART('month', trn.createdOn) = $2
         AND DATE_PART('year', trn.createdOn) = $3;  
     `;

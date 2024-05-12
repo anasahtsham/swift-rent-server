@@ -25,6 +25,7 @@ export const viewManagedProperties = async (req, res) => {
       JOIN Area AA ON P.areaID = AA.id
       JOIN City CC ON AA.cityID = CC.id
       WHERE P.managerID = $1
+      AND p.propertyStatus != 'D'
       ORDER BY P.id DESC;
       `;
 

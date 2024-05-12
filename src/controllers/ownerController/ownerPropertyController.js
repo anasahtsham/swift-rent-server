@@ -266,6 +266,7 @@ export const fetchPropertyList = async (req, res) => {
       LEFT JOIN UserInformation t ON p.tenantID = t.id
       LEFT JOIN UserInformation m ON p.managerID = m.id
       WHERE p.ownerID = $1
+      AND p.propertyStatus != 'D'
       ORDER BY p.id DESC
     `;
     const propertiesResult = await db.query(propertyQuery, [userID]);
@@ -834,8 +835,12 @@ export const deleteProperty = async (req, res) => {
       WHERE id = $1;
     `;
     const checkResult = await db.query(checkQuery, [propertyID]);
+    console.log(checkResult.rows[0].managerid, checkResult.rows[0].tenantid);
 
-    if (checkResult.rows.length > 0) {
+    if (
+      checkResult.rows[0].managerid !== null ||
+      checkResult.rows[0].tenantid !== null
+    ) {
       // If there is a manager or tenant associated with the property, do not delete
       return res.status(400).json({
         success:
