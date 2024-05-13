@@ -236,7 +236,7 @@ export const paidRentsList = async (req, res) => {
     const paidRentsQuery = `
         SELECT
             trn.propertyID as id,
-            trn.rentAmount,
+            trn.submittedAmount as rentAmount,
             TO_CHAR(trn.createdOn, 'DD-MM-YYYY') as createdOn,
             ui.firstName || ' ' || ui.lastName as tenantName,
             prop.propertyAddress || ', ' || area.areaName || ', ' || city.cityName as propertyAddress
@@ -296,16 +296,21 @@ export const detailedAnalytics = async (req, res) => {
     // Query to fetch rents collected for current month
     const rentsCollectedCurrentMonthQuery = `
         SELECT 
-          (SUM(trn.collectedAmount) - COALESCE((SELECT SUM(moneyReturned) 
-        FROM TerminateLease term 
-        WHERE DATE_PART('month', term.terminationDate) = $2 
-        AND DATE_PART('year', term.terminationDate) = $3), 0)) AS rentsCollected
+          SUM(trn.collectedAmount) AS rentsCollected
         FROM OwnerRentTransaction trn
         JOIN Property prop ON trn.propertyID = prop.id
         WHERE prop.ownerID = $1
         AND DATE_PART('month', trn.collectedOn) = $2
         AND DATE_PART('year', trn.collectedOn) = $3;
-      `;
+    `;
+    const moneyReturnedQuery = `
+    SELECT 
+      COALESCE(SUM(moneyReturned), 0) AS moneyReturned
+    FROM TerminateLease term
+    WHERE DATE_PART('month', term.terminationDate) = $2
+    AND DATE_PART('year', term.terminationDate) = $3
+    AND term.ownerID = $1;
+`;
 
     // Query to fetch maintenance costs for current month
     const maintenanceCostsCurrentMonthQuery = `
@@ -369,6 +374,11 @@ export const detailedAnalytics = async (req, res) => {
       rentsCollectedCurrentMonthQuery,
       [ownerID, currentMonth, currentYear]
     );
+    const moneyReturnedResult = await db.query(moneyReturnedQuery, [
+      ownerID,
+      currentMonth,
+      currentYear,
+    ]);
     const maintenanceCostsCurrentMonthResult = await db.query(
       maintenanceCostsCurrentMonthQuery,
       [ownerID, currentMonth, currentYear]
@@ -390,7 +400,8 @@ export const detailedAnalytics = async (req, res) => {
 
     // Extract results
     const rentsCollectedCurrentMonth =
-      rentsCollectedCurrentMonthResult.rows[0].rentscollected || 0;
+      (rentsCollectedCurrentMonthResult.rows[0].rentscollected || 0) -
+      (moneyReturnedResult.rows[0].moneyreturned || 0);
     const maintenanceCostsCurrentMonth =
       maintenanceCostsCurrentMonthResult.rows[0].maintenancecosts || 0;
     const pastMonthReports = pastMonthReportsResult.rows;

@@ -493,19 +493,21 @@ export const terminateTenant = async (req, res) => {
 
     // Create TerminateLease entry
     const createTerminateLeaseQuery = `
-      INSERT INTO TerminateLease (propertyLeaseID, terminationGeneratedBy, terminationDate, moneyReturned, terminationReason)
+      INSERT INTO TerminateLease (propertyLeaseID, terminationGeneratedBy, terminationDate, moneyReturned, terminationReason, ownerid)
       VALUES (
         $1,
         'O',
         CURRENT_TIMESTAMP,
         $2,
-        $3
+        $3,
+        $4
       );
     `;
     await db.query(createTerminateLeaseQuery, [
       propertyLeaseID,
       moneyReturned,
       terminationReason,
+      ownerID,
     ]);
 
     // Update TenantRentNotice table

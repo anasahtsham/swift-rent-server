@@ -90,12 +90,10 @@ export const login = async (req, res) => {
     }
     // if user is banned, return error
     if (user.isbanned) {
-      return res
-        .status(401)
-        .json({
-          error:
-            "You are banned from using SwiftRent. Contact Admin swiftrent2023@gmail.com",
-        });
+      return res.status(401).json({
+        error:
+          "You are banned from using SwiftRent. Contact Admin swiftrent2023@gmail.com",
+      });
     }
 
     // Return the user ID, userType, and success status
