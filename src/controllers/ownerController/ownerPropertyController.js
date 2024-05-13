@@ -553,10 +553,11 @@ export const terminateTenant = async (req, res) => {
     const notificationMessageTenant = `Your lease for property ${propertyAddress} has been terminated. Reason: ${terminationReason}`;
     const notificationQuery = `
       INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-      VALUES ($1, 'T', $2, 'O', $3, 'L');
+      VALUES ($1, $2, $3, 'O', $4, 'L');
     `;
     await db.query(notificationQuery, [
       tenantID,
+      "T",
       ownerID,
       notificationMessageTenant,
     ]);
@@ -575,6 +576,7 @@ export const terminateTenant = async (req, res) => {
     if (managerID) {
       await db.query(notificationQuery, [
         managerID,
+        "M",
         ownerID,
         notificationMessageManager,
       ]);

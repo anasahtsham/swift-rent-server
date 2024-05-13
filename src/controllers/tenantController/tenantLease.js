@@ -206,7 +206,6 @@ export const acceptLease = async (req, res) => {
     const {
       propertyid,
       tenantid,
-      managerid,
       rent,
       duedate,
       fine,
@@ -230,6 +229,12 @@ export const acceptLease = async (req, res) => {
       WHERE id = $1;
     `;
     await db.query(updateLeaseQuery, [leaseID]);
+
+    // Get ownerID from property table
+    const getOwnerIDQuery = `SELECT ownerID, managerID FROM Property WHERE id = $1;`;
+    const { rows: ownerRows } = await db.query(getOwnerIDQuery, [propertyid]);
+    const ownerid = ownerRows[0].ownerid;
+    const managerid = ownerRows[0]?.managerid || null;
 
     // Calculate rent amount for TenantRentNotice
     let rentAmount = 0;
@@ -283,7 +288,31 @@ export const acceptLease = async (req, res) => {
       notificationTextRegistrar,
     ]);
 
-    // Send notifications
+    // If registerar is owner, send notification to manager
+    if (registeredbytype === "O") {
+      if (managerid !== null) {
+        const notificationTextManager = `A tenant has been registered to the property: ${propertyAddress} by the owner.`;
+        await db.query(createRegistrarNotificationQuery, [
+          managerid,
+          "M",
+          registeredbyid,
+          "O",
+          notificationTextManager,
+        ]);
+      }
+    } else if (registeredbytype === "M") {
+      // If registrar is manager, send notification to owner
+      const notificationTextOwner = `A tenant has been registered to your property: ${propertyAddress} by the manager.`;
+      await db.query(createRegistrarNotificationQuery, [
+        ownerid,
+        "O",
+        registeredbyid,
+        "M",
+        notificationTextOwner,
+      ]);
+    }
+
+    // Send notifications to tenant for payment
     const createTenantNotificationQuery = `
       INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
       VALUES ($1, $2, $3, $4, $5, 'R');
@@ -291,11 +320,6 @@ export const acceptLease = async (req, res) => {
 
     // Create notification text
     const notificationTextTenant = `Pay ${rentAmount} for the property: ${propertyAddress}`;
-
-    // Get ownerID from property table
-    const getOwnerIDQuery = `SELECT ownerID FROM Property WHERE id = $1;`;
-    const { rows: ownerRows } = await db.query(getOwnerIDQuery, [propertyid]);
-    const ownerid = ownerRows[0].ownerid;
 
     // Send notification to tenant
     await db.query(createTenantNotificationQuery, [
