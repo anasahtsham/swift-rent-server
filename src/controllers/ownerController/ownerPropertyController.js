@@ -776,15 +776,18 @@ export const fetchPropertyDetail = async (req, res) => {
     const managerOfferResult = await db.query(managerOfferQuery, [propertyID]);
     const managerOffers = managerOfferResult.rows.length > 0;
 
+    // if lease is not active, then tenantPaymentStatus and should be null
+    if (lease === undefined) {
+      currentMonthRentStatus.tenantpaymentstatus = null;
+    }
+
     // Combine all retrieved information into a response object
     const propertyDetail = {
       header: {
         propertyAddress: property?.propertyaddress,
         rentStatus: {
           tenantPaymentStatus:
-            ((currentMonthRentStatus?.tenantpaymentstatus || "Not Rented") &&
-              lease) ||
-            "Not Rented",
+            currentMonthRentStatus?.tenantpaymentstatus || "Not Rented",
           managerPaymentStatus:
             currentMonthRentStatus?.managerpaymentstatus || null,
         },
