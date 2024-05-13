@@ -778,7 +778,11 @@ export const fetchPropertyDetail = async (req, res) => {
 
     // if lease is not active, then tenantPaymentStatus and should be null
     if (lease === undefined) {
-      currentMonthRentStatus.tenantpaymentstatus = null;
+      try {
+        // for the scenario where the property is vacant and there is no lease
+        // ever created for the property, the currentMonthRentStatus will be null
+        currentMonthRentStatus.tenantpaymentstatus = null;
+      } catch (error) {}
     }
 
     // Combine all retrieved information into a response object
@@ -870,6 +874,68 @@ export const deleteProperty = async (req, res) => {
     console.error("Error deleting property:", error);
     return res.status(500).json({
       success: "Failed to delete property.",
+      message: error.message,
+    });
+  }
+};
+
+//API 8: Delete Lease Request
+export const deleteLeaseRequest = async (req, res) => {
+  const { propertyID } = req.body;
+
+  try {
+    // Check if the property has a manager or tenant associated with it
+    const checkQuery = `
+      SELECT tenantID
+      FROM Property
+      WHERE id = $1;
+    `;
+    const checkResult = await db.query(checkQuery, [propertyID]);
+
+    if (checkResult.rows[0].tenantid !== null) {
+      // If there is a tenant associated with the property, do not delete
+      return res.status(400).json({
+        success: "Lease cannot be deleted as it is associated with a tenant.",
+      });
+    } else {
+      // Get the propertyLeaseID
+      const propertyLeaseIDQuery = `
+        SELECT id
+        FROM PropertyLease
+        WHERE propertyID = $1 AND leaseStatus = 'P'
+        ORDER BY id DESC;
+      `;
+      const propertyLeaseIDResult = await db.query(propertyLeaseIDQuery, [
+        propertyID,
+      ]);
+
+      // Check if there is a pending lease request
+      if (propertyLeaseIDResult.rows.length === 0) {
+        return res.status(400).json({
+          success: "No pending lease request found for the property.",
+        });
+      }
+
+      const propertyLeaseID = propertyLeaseIDResult.rows[0].id;
+
+      const reasonForRejection = "Owner deleted the property register request";
+
+      // Update the lease status to rejected and set leaseEndedOn timestamp
+      const updateLeaseQuery = `
+        UPDATE PropertyLease
+        SET leaseStatus = 'R', leaseEndedOn = CURRENT_TIMESTAMP, reasonForRejection = $1
+        WHERE id = $2;
+      `;
+      await db.query(updateLeaseQuery, [reasonForRejection, propertyLeaseID]);
+
+      return res.status(200).json({
+        success: "Property register request deleted successfully.",
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting property register request:", error);
+    return res.status(500).json({
+      success: "Failed to delete property register request.",
       message: error.message,
     });
   }
