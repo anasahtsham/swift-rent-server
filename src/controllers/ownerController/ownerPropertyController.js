@@ -782,7 +782,9 @@ export const fetchPropertyDetail = async (req, res) => {
         propertyAddress: property?.propertyaddress,
         rentStatus: {
           tenantPaymentStatus:
-            currentMonthRentStatus?.tenantpaymentstatus || "Not Rented",
+            ((currentMonthRentStatus?.tenantpaymentstatus || "Not Rented") &&
+              lease) ||
+            "Not Rented",
           managerPaymentStatus:
             currentMonthRentStatus?.managerpaymentstatus || null,
         },
