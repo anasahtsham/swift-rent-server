@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import applyRoutes from "./src/routes/index.js";
 import path from "path";
 import { logVisit } from "./src/helpers/websitelogger.js";
+import { initializeTasks } from "./src/tasks/index.js";
 
 const app = express();
 app.use(cors());
@@ -44,6 +45,9 @@ app.use(
 // app.get("/", (req, res) => {
 //   res.send("Welcome to the SwiftRent API Server! ");
 // });
+
+// Start the cron jobs
+initializeTasks();
 
 // Start the server
 app.listen(port, () => {
