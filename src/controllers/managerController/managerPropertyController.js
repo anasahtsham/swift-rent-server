@@ -72,7 +72,8 @@ export const fetchPropertyDetail = async (req, res) => {
       FROM TenantRentNotice tn
       WHERE tn.propertyID = $1 AND 
             EXTRACT(MONTH FROM tn.createdOn) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP) AND
-            EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP);
+            EXTRACT(YEAR FROM tn.createdOn) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+      ORDER BY tn.id DESC;
     `;
     const rentStatusResult = await db.query(rentStatusQuery, [propertyID]);
     const rentStatus = rentStatusResult.rows[0];
