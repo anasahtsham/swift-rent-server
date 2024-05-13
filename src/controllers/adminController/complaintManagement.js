@@ -66,7 +66,7 @@ export const setStatusInProgress = async (req, res) => {
 
     // Send Notification to the user that their complaint is in-progress
     const notificationQuery = `
-        INSERT INTO UserNotification (userID, userType, senderType, notificationMessage, notificationType)
+        INSERT INTO UserNotification (userID, userType, senderType, notificationText, notificationType)
         SELECT
           senderID,
           senderType,
@@ -120,7 +120,7 @@ export const setStatusSolved = async (req, res) => {
 
     // Send Notification to the user that their complaint is solved
     const notificationQuery = `
-        INSERT INTO UserNotification (userID, userType, senderType, notificationMessage, notificationType)
+        INSERT INTO UserNotification (userID, userType, senderType, notificationText, notificationType)
         SELECT
           senderID,
           senderType,
@@ -179,6 +179,20 @@ export const rejectComplaint = async (req, res) => {
           WHERE id = $1;
         `;
     await db.query(updateQuery, [complaintID]);
+
+    // Send Notification to the user that their complaint is rejected
+    const notificationQuery = `
+          INSERT INTO UserNotification (userID, userType, senderType, notificationText, notificationType)
+          SELECT
+            senderID,
+            senderType,
+            'A',
+            'Your complaint has been rejected',
+            'A'
+          FROM AdminComplaint
+          WHERE id = $1;
+        `;
+    await db.query(notificationQuery, [complaintID]);
 
     // Send success response with the updated status
     res.status(200).json({ success: true, status: "R" });

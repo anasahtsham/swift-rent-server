@@ -57,6 +57,13 @@ export const getUserNotifications = async (req, res) => {
 
     const { rows } = await db.query(notificationsQuery, [userID, userType]);
 
+    // Iterate over the rows and replace any empty senderName with 'System'
+    rows.forEach((row) => {
+      if (row.sendername === " ") {
+        row.sendername = "System";
+      }
+    });
+
     // Check if there are no notifications for the user
     if (rows.length === 0) {
       return res
