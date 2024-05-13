@@ -64,6 +64,20 @@ export const setStatusInProgress = async (req, res) => {
       `;
     await db.query(updateQuery, [complaintID]);
 
+    // Send Notification to the user that their complaint is in-progress
+    const notificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderType, notificationMessage, notificationType)
+        SELECT
+          senderID,
+          senderType,
+          'A',
+          'Your complaint is now in-progress',
+          'A'
+        FROM AdminComplaint
+        WHERE id = $1;
+      `;
+    await db.query(notificationQuery, [complaintID]);
+
     // Send success response
     res.status(200).json({ success: true });
   } catch (error) {

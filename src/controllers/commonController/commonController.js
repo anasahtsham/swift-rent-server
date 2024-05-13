@@ -42,17 +42,17 @@ export const getUserNotifications = async (req, res) => {
 
     // Query to retrieve user notifications
     const notificationsQuery = `
-      SELECT UN.id, 
-             TO_CHAR(UN.sentOn, 'DD-MM-YYYY') AS dateAndYear, 
-             TO_CHAR(UN.sentOn, 'HH24:MI') AS time, 
-             CONCAT(UI.firstName, ' ', UI.lastName) AS senderName, 
-             UN.senderType, 
-             UN.notificationText, 
-             UN.notificationType
-      FROM UserNotification UN
-      JOIN UserInformation UI ON UN.senderID = UI.id
-      WHERE UN.userID = $1 AND UN.userType = $2
-      ORDER BY UN.sentOn DESC;
+    SELECT UN.id, 
+        TO_CHAR(UN.sentOn, 'DD-MM-YYYY') AS dateAndYear, 
+        TO_CHAR(UN.sentOn, 'HH24:MI') AS time, 
+        COALESCE(CONCAT(UI.firstName, ' ', UI.lastName), 'System') AS senderName, 
+        UN.senderType, 
+        UN.notificationText, 
+        UN.notificationType
+    FROM UserNotification UN
+    LEFT JOIN UserInformation UI ON UN.senderID = UI.id
+    WHERE UN.userID = $1 AND UN.userType = $2
+    ORDER BY UN.sentOn DESC;
     `;
 
     const { rows } = await db.query(notificationsQuery, [userID, userType]);

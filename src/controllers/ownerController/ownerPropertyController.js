@@ -846,7 +846,6 @@ export const deleteProperty = async (req, res) => {
       WHERE id = $1;
     `;
     const checkResult = await db.query(checkQuery, [propertyID]);
-    console.log(checkResult.rows[0].managerid, checkResult.rows[0].tenantid);
 
     if (
       checkResult.rows[0].managerid !== null ||
