@@ -118,6 +118,20 @@ export const setStatusSolved = async (req, res) => {
       `;
     await db.query(updateQuery, [complaintID]);
 
+    // Send Notification to the user that their complaint is solved
+    const notificationQuery = `
+        INSERT INTO UserNotification (userID, userType, senderType, notificationMessage, notificationType)
+        SELECT
+          senderID,
+          senderType,
+          'A',
+          'Your complaint has been solved',
+          'A'
+        FROM AdminComplaint
+        WHERE id = $1;
+      `;
+    await db.query(notificationQuery, [complaintID]);
+
     // Send success response
     res.status(200).json({ success: true });
   } catch (error) {
