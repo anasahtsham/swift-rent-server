@@ -87,7 +87,7 @@ export function sendLeaseExpirationNotifications() {
 
       console.log("Lease expiration notifications sent successfully.");
     } catch (error) {
-      console.error("Error sending lease expiration notifications:", error);
+      // console.error("Error sending lease expiration notifications:", error);
     }
   });
 }
@@ -188,7 +188,7 @@ export function sendLeaseTerminationNotifications() {
 
       console.log("Lease termination notifications sent successfully.");
     } catch (error) {
-      console.error("Error sending lease termination notifications:", error);
+      // console.error("Error sending lease termination notifications:", error);
     }
   });
 }

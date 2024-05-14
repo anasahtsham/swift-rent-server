@@ -72,7 +72,7 @@ export function createMonthlyOwnerReport() {
 
       console.log("Monthly report for owners created successfully.");
     } catch (error) {
-      console.error("Error creating monthly report for owners:", error);
+      // console.error("Error creating monthly report for owners:", error);
     }
   });
 }

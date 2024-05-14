@@ -109,7 +109,7 @@ export function createRentNoticesForTenants() {
 
       console.log("Rent notices created successfully.");
     } catch (error) {
-      console.error("Error creating rent notices:", error);
+      // console.error("Error creating rent notices:", error);
     }
   });
 }
@@ -146,7 +146,7 @@ export function sendRentPaymentReminders() {
 
       console.log("Rent payment reminders sent successfully.");
     } catch (error) {
-      console.error("Error sending rent payment reminders:", error);
+      // console.error("Error sending rent payment reminders:", error);
     }
   });
 }
@@ -200,7 +200,7 @@ export function sendDueDatePassedNotifications() {
 
       console.log("Due date passed notifications sent successfully.");
     } catch (error) {
-      console.error("Error sending due date passed notifications:", error);
+      // console.error("Error sending due date passed notifications:", error);
     }
   });
 }
