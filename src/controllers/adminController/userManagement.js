@@ -6,16 +6,16 @@ export const userList = async (req, res) => {
   try {
     const query = `
       SELECT id, 
-             firstName, 
-             lastName, 
-             TO_CHAR(DOB, 'DD-MM-YYYY') AS dob, 
-             phone, 
-             email, 
-             isManager, 
-             isTenant, 
-             isOwner, 
-             isBanned, 
-             TO_CHAR(registeredOn, 'DD-MM-YYYY HH24:MI:SS') AS registeredOn 
+        firstName, 
+        lastName, 
+        TO_CHAR(DOB, 'DD-MM-YYYY') AS dob, 
+        phone, 
+        email, 
+        isManager, 
+        isTenant, 
+        isOwner, 
+        isBanned, 
+        TO_CHAR(registeredOn, 'DD-MM-YYYY HH24:MI:SS') AS registeredOn 
       FROM UserInformation
       ORDER BY id DESC;
     `;

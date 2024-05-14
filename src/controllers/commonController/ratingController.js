@@ -23,7 +23,7 @@ export const fetchMyRatings = async (req, res) => {
       JOIN City c ON a.cityID = c.id
       JOIN UserInformation ui ON rt.ratedByID = ui.id
       WHERE rt.userID = $1 AND rt.userType = $2 AND rt.ratingStatus = 'R'
-      ORDER BY rt.id DESC;
+      ORDER BY rt.ratedOn DESC;
     `;
 
     // Execute the query
@@ -64,7 +64,7 @@ export const fetchGivenRatings = async (req, res) => {
     JOIN City c ON a.cityID = c.id
     JOIN UserInformation ui ON rt.userID = ui.id
     WHERE rt.ratedByID = $1 AND rt.ratedByType = $2 AND rt.ratingStatus = 'R'
-    ORDER BY rt.id DESC;
+    ORDER BY rt.ratedOn DESC;
     `;
 
     // Execute the query
@@ -102,7 +102,7 @@ export const fetchPendingRatings = async (req, res) => {
     JOIN City c ON a.cityID = c.id
     JOIN UserInformation ui ON rt.userID = ui.id
     WHERE rt.ratedByID = $1 AND rt.ratedByType = $2 AND rt.ratingStatus = 'P'
-    ORDER BY rt.id DESC;
+    ORDER BY rt.ratingStartDate DESC;
     `;
 
     // Execute the query

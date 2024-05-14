@@ -26,7 +26,6 @@ export const submitVerificationRequest = async (req, res) => {
     // Send notification to owner or manager
     let receiverID;
     let receiverType;
-    let notificationMessage;
 
     // Get Property Address
     const propertyAddressQuery = `
@@ -40,15 +39,14 @@ export const submitVerificationRequest = async (req, res) => {
       propertyID,
     ]);
     const propertyAddress = propertyAddressResult.rows[0].address;
+    const notificationMessage = `Tenant is requesting online rent verification for property ${propertyAddress}. Message: ${verificationMessage}`;
 
     if (managerID) {
       receiverID = managerID;
       receiverType = "M";
-      notificationMessage = `Tenant is requesting online rent verification for property ${propertyAddress}.`;
     } else {
       receiverID = ownerID;
       receiverType = "O";
-      notificationMessage = `Tenant is requesting online rent verification for property ${propertyAddress}.`;
     }
 
     // Find last TenantRentNotice for the tenant

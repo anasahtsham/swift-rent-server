@@ -305,7 +305,7 @@ export const registerTenant = async (req, res) => {
       [phone]
     );
 
-    if (isTenantQuery.rows.length === 0) {
+    if (isTenantQuery.rows[0].istenant === false) {
       return res.status(404).json({ error: "User not registered as Tenant" });
     }
 

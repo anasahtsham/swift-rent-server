@@ -333,11 +333,11 @@ export const submitManagerVerificationRequest = async (req, res) => {
     ]);
 
     // Send notification to owner
-    const notificationMessage = `Manager is requesting online rent verification for property ${propertyAddress}.`;
+    const notificationMessage = `Manager is requesting online rent verification for property ${propertyAddress}. Message: ${verificationMessage}`;
     const notificationQuery = `
-    INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
-    VALUES ($1, 'O', $2, 'M', $3, 'R');
-  `;
+      INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
+      VALUES ($1, 'O', $2, 'M', $3, 'R');
+    `;
     await db.query(notificationQuery, [
       ownerID,
       managerID,

@@ -92,7 +92,7 @@ export const login = async (req, res) => {
     if (user.isbanned) {
       return res.status(401).json({
         error:
-          "You are banned from using SwiftRent. Contact Admin swiftrent2023@gmail.com",
+          "You have been banned from the system. Please contact the admin at swiftrent2023@gmail.com for more information.",
       });
     }
 
