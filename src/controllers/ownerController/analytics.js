@@ -429,6 +429,7 @@ export const detailedAnalytics = async (req, res) => {
       const monthName = date.toLocaleString("default", { month: "short" });
       monthNames.push(monthName);
     }
+    monthNames.reverse();
 
     const totalCollectedRents = defaultArray
       .map((_, index) =>
