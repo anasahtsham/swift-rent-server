@@ -183,12 +183,21 @@ export const generateCounterRequest = async (req, res) => {
     ]);
     const propertyAddress = addressRows[0].address;
 
+    // Get the phone number of the manager using userInformation table
+    const managerPhoneQuery = `
+      SELECT phone
+      FROM UserInformation
+      WHERE id = $1;
+    `;
+    const { rows: phoneRows } = await db.query(managerPhoneQuery, [managerID]);
+    const managerPhone = phoneRows[0].phone;
+
     const notificationQuery = `
             INSERT INTO UserNotification (userID, userType, senderID, senderType, notificationText, notificationType)
             VALUES (
               (SELECT ownerID FROM Property WHERE id = (SELECT propertyID FROM ManagerHireRequest WHERE id = $1)), 'O',
               $2, 'M',
-              'Sent you a counter request for your property ${propertyAddress}.',
+              'Sent you a counter request for your property ${propertyAddress}. Managers phone: ${managerPhone}',
               'R'
             );
           `;

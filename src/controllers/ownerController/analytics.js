@@ -422,9 +422,9 @@ export const detailedAnalytics = async (req, res) => {
 
     // Prepare graph data
     // Prepare graph data
-    const defaultArray = new Array(11).fill(0);
+    const defaultArray = new Array(5).fill(0);
     const monthNames = [];
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 5; i++) {
       const date = new Date(currentYear, currentMonth - i - 2, 1);
       const monthName = date.toLocaleString("default", { month: "short" });
       monthNames.push(monthName);
