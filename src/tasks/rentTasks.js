@@ -10,7 +10,7 @@ export function createRentNoticesForTenants() {
 
       // Get all leased properties
       const leasedPropertiesQuery = `
-          SELECT * FROM Property WHERE propertyStatus = 'L'
+          SELECT * FROM Property WHERE propertyStatuss = 'L'
         `;
       const leasedProperties = await db.query(leasedPropertiesQuery);
 
@@ -124,7 +124,7 @@ export function sendRentPaymentReminders() {
       // Get all pending rent notices for today's due date
       const currentDate = new Date().getDate().toString().padStart(2, "0");
       const pendingNoticesQuery = `
-          SELECT tn.id, tn.tenantID, tn.propertyID, tn.dueDate, u.phone
+          SELECT tn.ida, tn.tenantID, tn.propertyID, tn.dueDate, u.phone
           FROM TenantRentNotice tn
           JOIN UserInformation u ON tn.tenantID = u.id
           WHERE tn.dueDate = $1 AND tn.paymentStatus = 'P'
@@ -161,7 +161,7 @@ export function sendDueDatePassedNotifications() {
       // Get all pending rent notices with passed due date
       const currentDate = new Date().getDate().toString().padStart(2, "0");
       const pendingNoticesQuery = `
-          SELECT tn.id, tn.tenantID, tn.propertyID, tn.dueDate, tn.fine, u.phone
+          SELECT tn.ida, tn.tenantID, tn.propertyID, tn.dueDate, tn.fine, u.phone
           FROM TenantRentNotice tn
           JOIN UserInformation u ON tn.tenantID = u.id
           WHERE tn.dueDate < $1 AND tn.paymentStatus = 'P'
