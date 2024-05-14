@@ -172,7 +172,7 @@ export const pendingRentsList = async (req, res) => {
     // Query to fetch pending rents
     const pendingRentsQuery = `
         SELECT
-            trn.propertyID as id,
+            trn.id as id,
             trn.rentAmount,
             TO_CHAR(trn.createdOn, 'DD-MM-YYYY') as createdOn,
             ui.firstName || ' ' || ui.lastName as tenantName,
@@ -235,7 +235,7 @@ export const paidRentsList = async (req, res) => {
     // Query to fetch paid rents
     const paidRentsQuery = `
         SELECT
-            trn.propertyID as id,
+            trn.id as id,
             trn.submittedAmount as rentAmount,
             TO_CHAR(trn.createdOn, 'DD-MM-YYYY') as createdOn,
             ui.firstName || ' ' || ui.lastName as tenantName,
