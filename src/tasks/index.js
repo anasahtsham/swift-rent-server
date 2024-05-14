@@ -4,6 +4,7 @@ import { sendRentPaymentReminders } from "./rentTasks.js";
 import { sendDueDatePassedNotifications } from "./rentTasks.js";
 import { sendLeaseExpirationNotifications } from "./leaseTasks.js";
 import { sendLeaseTerminationNotifications } from "./leaseTasks.js";
+import { createMonthlyOwnerReport } from "./monthlyReportTask.js";
 
 export function initializeTasks() {
   updateRentDaysTask();
@@ -12,4 +13,5 @@ export function initializeTasks() {
   sendDueDatePassedNotifications();
   sendLeaseExpirationNotifications();
   sendLeaseTerminationNotifications();
+  createMonthlyOwnerReport();
 }

@@ -392,8 +392,7 @@ export const acceptCounterRequest = async (req, res) => {
       oneTimePay = $2,
       salaryFixed = $3,
       salaryPercentage = $4,
-      rent = $5,
-      contractStartDate = CURRENT_DATE
+      rent = $5
       WHERE id = (
         SELECT managerHireRequestID
         FROM ManagerHireCounterRequest
@@ -726,8 +725,7 @@ export const fireManager = async (req, res) => {
     // Update the managerStatus to 'T' in ManagerHireRequest table
     const updateManagerStatusQuery = `
       UPDATE ManagerHireRequest
-      SET managerStatus = 'T',
-          contractEndDate = CURRENT_DATE
+      SET managerStatus = 'T'
       WHERE id = $1;
     `;
     await db.query(updateManagerStatusQuery, [managerHireRequestID]);
