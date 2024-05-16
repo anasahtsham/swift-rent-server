@@ -15,3 +15,4 @@ Used CRON JOBs from NODE-CRON library to automate lease and rent notices, and ad
 Using the root endpoint of my express server, hosted a bootstrap built responsive landing page, which showcases brief description of our product.
 
 [SwiftRent.com](https://swiftrent.in.ngrok.io/)
+[My LinkedIn Profile](https://www.linkedin.com/in/anas-ahtsham-184a8086/)

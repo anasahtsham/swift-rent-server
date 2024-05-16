@@ -1,3 +1,0 @@
-The password strength for the users on the platform has been kept relatively simple. Eight characters long and no other constraints. We did this because the users of our industry are not all that aware of security concerns. So, we must take care of the easily decryptable passwords. 
-The passwords of the users shall not be kept in the database without being encrypted. Each password shall be encrypted using the MD5 hash function on the mobile application, with a single salt applied and ten additional MD5 salting rounds at the server level. This will ensure that the passwords of users cannot be decrypted easily.
-To measure 
