@@ -16,3 +16,7 @@ Using the root endpoint of my express server, hosted a bootstrap built responsiv
 
 [SwiftRent.com](https://swiftrent.in.ngrok.io/)
 [My LinkedIn Profile](https://www.linkedin.com/in/anas-ahtsham-184a8086/)
+
+Copyright (c) 2024 SwiftRent ( mh.anasahtsham@gmail.com )
+
+All Rights Reserverd
