@@ -309,6 +309,18 @@ export const checkBan = async (req, res) => {
       return res.status(200).json({ isBanned: user.rows[0].isbanned });
     }
 
+    // Get Full Name of User by CONCAT
+    const userFullName = await db.query(
+      "SELECT CONCAT(firstName, ' ', lastName) as fullName FROM UserInformation WHERE id = $1",
+      [userID]
+    );
+
+    // print the id of the user
+    console.log("User ID: ", userID);
+
+    // print the name of the user
+    console.log("User Full Name: ", userFullName.rows[0].fullname);
+
     // Return the ban status
     return res.status(200).json({ isBanned: user.rows[0].isbanned });
   } catch (error) {
