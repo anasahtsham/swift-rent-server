@@ -324,7 +324,7 @@ export const checkBan = async (req, res) => {
     // Return the ban status
     return res.status(200).json({ isBanned: user.rows[0].isbanned });
   } catch (error) {
-    console.error("Error in checkBan controller:", error);
+    console.error("Error in check ban controller:", error);
     return res.status(500).json({ error: "User Not Found!" });
   }
 };
