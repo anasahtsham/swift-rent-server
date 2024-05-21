@@ -1088,3 +1088,15 @@ section {
     text-align: center;
   }
 }
+
+.social-links {
+  display: flex;
+  justify-content: space-between;
+  width: 120px; /* Adjust as needed */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.social-links a {
+  font-size: 2.5rem; /* Adjust as needed */
+}
