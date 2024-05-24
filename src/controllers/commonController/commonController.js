@@ -213,7 +213,7 @@ export const getWebsiteVisitsPerDay = async (req, res) => {
       visits: count,
     }));
 
-    res.status(200).json(visitsList);
+    res.status(200).json(visitsList.reverse());
   } catch (error) {
     console.error("Error fetching website visits per day:", error);
     res.status(500).json({
