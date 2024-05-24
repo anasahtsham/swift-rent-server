@@ -31,6 +31,10 @@ commonRouter.post(
 commonRouter.post("/submit-rating", ratingController.submitRating); //11
 commonRouter.post("/edit-rating", ratingController.editRating); //12
 commonRouter.post("/rent-history", commonController.rentHistory); //13
+commonRouter.get(
+  "/website-visits-per-day",
+  commonController.getWebsiteVisitsPerDay
+); //14
 
 // Total APIs: 13
 
