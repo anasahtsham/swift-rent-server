@@ -159,3 +159,65 @@ export const rentHistory = async (req, res) => {
     });
   }
 };
+
+//API 4: Website Visits Per day
+export const getWebsiteVisitsPerDay = async (req, res) => {
+  try {
+    // Query to get the first entry's date
+    const firstEntryQuery = `
+      SELECT logOn
+      FROM WebsiteLog
+      ORDER BY logOn ASC
+      LIMIT 1
+    `;
+    const { rows: firstEntryRows } = await db.query(firstEntryQuery);
+
+    if (firstEntryRows.length === 0) {
+      return res.status(200).json({
+        message: "No website visits found",
+        visits: [],
+      });
+    }
+
+    const firstDate = firstEntryRows[0].logon;
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    // Query to get the number of visits per day
+    const visitsQuery = `
+      SELECT 
+        DATE(logOn) AS visitDate, 
+        COUNT(*) AS visitCount 
+      FROM WebsiteLog 
+      GROUP BY visitDate
+      ORDER BY visitDate
+    `;
+    const { rows: visitsRows } = await db.query(visitsQuery);
+
+    // Create a date map for all dates between firstDate and currentDate
+    const visitsMap = {};
+    let dateIterator = new Date(firstDate);
+    while (dateIterator <= new Date(currentDate)) {
+      const dateString = dateIterator.toISOString().split("T")[0];
+      visitsMap[dateString] = 0;
+      dateIterator.setDate(dateIterator.getDate() + 1);
+    }
+
+    // Fill the map with actual visit data
+    visitsRows.forEach((row) => {
+      visitsMap[row.visitdate] = parseInt(row.visitcount);
+    });
+
+    // Convert map to list of { date, visits } objects
+    const visitsList = Object.entries(visitsMap).map(([date, count]) => ({
+      date,
+      visits: count,
+    }));
+
+    res.status(200).json(visitsList);
+  } catch (error) {
+    console.error("Error fetching website visits per day:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
